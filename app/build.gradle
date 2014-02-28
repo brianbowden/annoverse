@@ -14,7 +14,7 @@ repositories {
 }
 
 dependencies {
-    compile 'tess-two:tess-two:0.0.1-SNAPSHOT'
+    compile 'tess-two:tess-two:0.0.1-SNAPSHOT@aar'
     /** This is included from local Maven repo. See https://github.com/brianbowden/tess-two **/
 }
 

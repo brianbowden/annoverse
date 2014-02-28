@@ -16,6 +16,7 @@ import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
 
+import com.annoverse.app.utils.DataUtils;
 import com.annoverse.app.utils.RecursiveFileObserver;
 
 import java.io.IOException;
@@ -39,6 +40,8 @@ public class OverlayControlService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
+
+        DataUtils.copyDataIfRequired(this);
 
         mScreenshotObserver = new RecursiveFileObserver(Environment
                 .getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
