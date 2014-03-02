@@ -1,5 +1,6 @@
 package com.itsaverse.app;
 
+import android.app.ActionBar;
 import android.app.Dialog;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -30,16 +31,27 @@ import android.view.WindowManager;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.DecelerateInterpolator;
+import android.webkit.MimeTypeMap;
+import android.webkit.WebView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.googlecode.tesseract.android.TessBaseAPI;
 import com.itsaverse.app.utils.BitmapUtils;
 import com.itsaverse.app.utils.DataUtils;
+import com.itsaverse.app.utils.NetworkUtils;
 import com.itsaverse.app.utils.RecursiveFileObserver;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
+
+import retrofit.Callback;
+import retrofit.RetrofitError;
+import retrofit.client.Response;
 
 public class OverlayControlService extends Service {
 
@@ -96,7 +108,11 @@ public class OverlayControlService extends Service {
 
         sIsAlive = false;
 
-        Log.d(TAG, "Stopping OverlayControlService");
+        if (mScreenshotObserver != null) {
+            mScreenshotObserver.stopWatching();
+        }
+
+        Log.e(TAG, "Stopping OverlayControlService");
     }
 
     @Override
@@ -202,18 +218,22 @@ public class OverlayControlService extends Service {
         final RelativeLayout screenLayout = new RelativeLayout(CONTEXT);
 
         final RelativeLayout overlayLayout = new RelativeLayout(CONTEXT);
-        overlayLayout.setBackgroundColor(Color.parseColor("#88000000"));
+        overlayLayout.setBackgroundColor(Color.parseColor("#AA000000"));
         screenLayout.addView(overlayLayout);
         RelativeLayout.LayoutParams overlayLp = (RelativeLayout.LayoutParams) overlayLayout.getLayoutParams();
         overlayLp.height = ViewGroup.LayoutParams.MATCH_PARENT;
         overlayLp.width = ViewGroup.LayoutParams.MATCH_PARENT;
 
-        TextView exampleLabel = (TextView) LayoutInflater.from(CONTEXT).inflate(R.layout.overlay_item, screenLayout, false);
-        RelativeLayout.LayoutParams labelLp = (RelativeLayout.LayoutParams) exampleLabel.getLayoutParams();
-        labelLp.addRule(RelativeLayout.CENTER_IN_PARENT);
+        WebView scriptureWebView = new WebView(CONTEXT);
+        overlayLayout.addView(scriptureWebView);
+        RelativeLayout.LayoutParams scriptureLp = (RelativeLayout.LayoutParams) scriptureWebView.getLayoutParams();
+        scriptureLp.height = ActionBar.LayoutParams.MATCH_PARENT;
+        scriptureLp.width = ActionBar.LayoutParams.MATCH_PARENT;
+        scriptureLp.setMargins(50, 200, 50, 200);
 
-        exampleLabel.setText(data);
-        overlayLayout.addView(exampleLabel);
+        scriptureWebView.loadData("<font color=\"#ffffff\">" + data + "</font>", "text/html", "utf8");
+        scriptureWebView.setBackgroundColor(getResources().getColor(android.R.color.transparent));
+
         overlayLayout.setVisibility(View.INVISIBLE);
 
         windowManager.addView(screenLayout, lp);
@@ -286,7 +306,11 @@ public class OverlayControlService extends Service {
 
                 BitmapUtils.correctBitmapOrientation(CONTEXT, bitmap, uri.getPath(), false);
                 mTessApi.setImage(bitmap);
-                return mTessApi.getUTF8Text();
+                String fullText = mTessApi.getUTF8Text();
+
+                String testPassage = "John 3:1-5";
+
+                return testPassage;
 
             } else {
                 Log.e(TAG, "Bitmap was null");
@@ -297,8 +321,32 @@ public class OverlayControlService extends Service {
 
         @Override
         protected void onPostExecute(String result) {
-            displayOverlay(result);
-            mNotificationManager.notify(NOTIFICATION_ID, getControllerNotification(false));
+
+            String passage = null;
+
+            try {
+                passage = URLEncoder.encode(result, Charset.defaultCharset().name());
+
+            } catch (UnsupportedEncodingException e) {
+                Log.e(TAG, "Error encoding the passage: " + e != null ? e.getMessage() : "");
+                return;
+            }
+
+            Callback<String> callback = new Callback<String>() {
+                @Override
+                public void success(String passageText, Response response) {
+                    displayOverlay(passageText);
+                    mNotificationManager.notify(NOTIFICATION_ID, getControllerNotification(false));
+                }
+
+                @Override
+                public void failure(RetrofitError retrofitError) {
+                    Toast.makeText(CONTEXT, "Unable to look up passage!", Toast.LENGTH_LONG);
+                    Log.e(TAG, "Unable to look up passage: " + retrofitError != null ? retrofitError.getMessage() : "");
+                }
+            };
+
+            VerseFetcher.requestEsvPassage("IP", passage, callback);
         }
     }
 

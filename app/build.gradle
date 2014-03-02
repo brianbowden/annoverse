@@ -9,12 +9,15 @@ buildscript {
 apply plugin: 'android'
 
 repositories {
+    mavenCentral()
     maven { url "${System.env.HOME}/.m2/repository" }
     /** really wish mavenLocal() worked... **/
 }
 
 dependencies {
     compile 'tess-two:tess-two:0.0.1-SNAPSHOT@aar'
+    compile 'org.apache.commons:commons-io:+'
+    compile 'com.squareup.retrofit:retrofit:+'
     /** This is included from local Maven repo. See https://github.com/brianbowden/tess-two **/
 }
 

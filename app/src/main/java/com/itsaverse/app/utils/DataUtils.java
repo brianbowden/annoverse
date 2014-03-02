@@ -30,7 +30,7 @@ public class DataUtils {
                 dataFile.getParentFile().mkdirs();
                 dataFile.createNewFile();
                 OutputStream out = new FileOutputStream(DATA_PATH);
-                copyFile(in, out);
+                copy(in, out);
                 in.close();
                 out.flush();
                 out.close();
@@ -42,7 +42,7 @@ public class DataUtils {
         }
     }
 
-    private static void copyFile(InputStream in, OutputStream out) throws IOException {
+    public static void copy(InputStream in, OutputStream out) throws IOException {
         byte[] buffer = new byte[1024];
         int read;
         while((read = in.read(buffer)) != -1){
