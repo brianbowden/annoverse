@@ -1,24 +1,19 @@
-package com.annoverse.app;
+package com.itsaverse.app;
 
 import android.app.Activity;
 import android.app.Dialog;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.provider.MediaStore;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.annoverse.app.utils.BitmapUtils;
-import com.annoverse.app.utils.DataUtils;
+import com.itsaverse.app.utils.BitmapUtils;
 import com.googlecode.tesseract.android.TessBaseAPI;
-
-import java.io.IOException;
 
 public class ImageViewer extends Activity {
 

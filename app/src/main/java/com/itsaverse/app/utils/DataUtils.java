@@ -1,4 +1,4 @@
-package com.annoverse.app.utils;
+package com.itsaverse.app.utils;
 
 import android.content.Context;
 import android.content.res.AssetManager;

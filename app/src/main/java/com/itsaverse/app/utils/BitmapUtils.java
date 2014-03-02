@@ -1,4 +1,4 @@
-package com.annoverse.app.utils;
+package com.itsaverse.app.utils;
 
 import android.content.Context;
 import android.database.Cursor;
@@ -10,9 +10,6 @@ import android.util.Log;
 
 import java.io.IOException;
 
-/**
- * Created by bicxman on 2/27/14.
- */
 public class BitmapUtils {
 
     public static Bitmap correctBitmapOrientation(Context ctx, Bitmap bitmap, String path, boolean fromCamera) {

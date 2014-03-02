@@ -1,4 +1,4 @@
-package com.annoverse.app.utils;
+package com.itsaverse.app.utils;
 
 //---------------------------------------------------------------------------------------------------
 // Source: https://github.com/bartoszprzybylski/owncloud-android/blob/master/src/com/owncloud/android/utils/RecursiveFileObserver.java
