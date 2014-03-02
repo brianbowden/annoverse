@@ -10,6 +10,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class DataUtils {
 
@@ -47,6 +51,36 @@ public class DataUtils {
         int read;
         while((read = in.read(buffer)) != -1){
             out.write(buffer, 0, read);
+        }
+    }
+
+    public static List<VerseReference> getVerseReferences(String fullText) {
+        List<VerseReference> refs = new ArrayList<VerseReference>();
+
+        Pattern regex = Pattern.compile(VerseReference.REGEX);
+        Matcher matcher = regex.matcher(fullText);
+
+        while (matcher.find()) {
+            refs.add(new VerseReference(matcher.group(), matcher.start(), matcher.end()));
+        }
+
+        return refs;
+    }
+
+    public static class VerseReference {
+
+        public static final String REGEX = "\\b(((1|2|3|i|ii|iii)\\s)?(\\w+|(song of \\w+))\\.?)(\\s)((\\s?([,-–]|," +
+                "? and|to)\\s?)?(?!([12] (sam|king|chron|cor|thes|tim|pet|john)))(\\d{1,3})((:)(((,|,? " +
+                "and|to)\\s?)?(\\d{1,3}(?!:))(\\s?(-|–)\\s?\\d{1,3}(?!:))?)+)?)+\\b";
+
+        public String text;
+        public int startIndex;
+        public int stopIndex;
+
+        public VerseReference(String text, int startIndex, int stopIndex) {
+            this.text = text;
+            this.startIndex = startIndex;
+            this.stopIndex = stopIndex;
         }
     }
 }
