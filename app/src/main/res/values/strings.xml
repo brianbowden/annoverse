@@ -7,8 +7,9 @@
     <string name="settings_intro">Itsaverse: Take a Screenshot!</string>
     <string name="settings_turn_off">Turn Off</string>
     <string name="ongoing_notification_title">Itsaverse</string>
-    <string name="ongoing_notification_desc">Waiting for screen shots to scan</string>
+    <string name="ongoing_notification_desc">Waiting for screenshots to scan</string>
     <string name="ongoing_notification_turn_off">Turn Off</string>
     <string name="settings_turn_on">Turn On</string>
+    <string name="ongoing_notification_scanning">Scanning screenshot for verse references</string>
 
 </resources>

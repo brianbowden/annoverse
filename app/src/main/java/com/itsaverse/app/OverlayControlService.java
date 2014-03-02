@@ -1,12 +1,18 @@
 package com.itsaverse.app;
 
+import android.app.Dialog;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.graphics.PixelFormat;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Environment;
@@ -15,8 +21,20 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.DecelerateInterpolator;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 
+import com.googlecode.tesseract.android.TessBaseAPI;
+import com.itsaverse.app.utils.BitmapUtils;
 import com.itsaverse.app.utils.DataUtils;
 import com.itsaverse.app.utils.RecursiveFileObserver;
 
@@ -36,10 +54,13 @@ public class OverlayControlService extends Service {
     private static final int NOTIFICATION_ID = 89384;
     private static boolean sIsAlive = false;
 
+    private final Context CONTEXT = this;
+
     private Binder mBinder;
     private Handler mHandler;
     private NotificationManager mNotificationManager;
     private RecursiveFileObserver mScreenshotObserver;
+    private TessBaseAPI mTessApi;
 
     private boolean mIsInitialized = false;
 
@@ -49,6 +70,19 @@ public class OverlayControlService extends Service {
         mHandler = new Handler(Looper.getMainLooper());
 
         mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+
+        // Offload the Tess initialization into a non-UI thread. This is potentially hazardous, but it should be ok.
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    mTessApi = new TessBaseAPI();
+                    mTessApi.init(Environment.getExternalStorageDirectory().getAbsolutePath(), "eng");
+                } catch (Exception e) {
+                    Log.e(TAG, "Unable to initialize Tess: " + (e != null ? e.getMessage() : "n/a"));
+                }
+            }
+        }).run();
     }
 
     @Override
@@ -95,8 +129,8 @@ public class OverlayControlService extends Service {
 
                 @Override
                 public void onEvent(int event, String path) {
-                    if (event == FileObserver.CREATE) {
-                        Log.d(TAG, "A FILE HAS BEEN OBSERVED!!!!");
+                    if (event == FileObserver.CLOSE_WRITE && path != null && path.toLowerCase().contains("screen")) {
+                        Log.e(TAG, "A SCREENSHOT HAS BEEN OBSERVED");
                         respondToScreenshot(path);
                     }
                 }
@@ -104,9 +138,9 @@ public class OverlayControlService extends Service {
             mScreenshotObserver.startWatching();
 
             mIsInitialized = true;
-            Log.d(TAG, "RUNNING OVERLAY CONTROL SERVICE");
+            Log.e(TAG, "RUNNING OVERLAY CONTROL SERVICE");
 
-            startForeground(NOTIFICATION_ID, getControllerNotification());
+            startForeground(NOTIFICATION_ID, getControllerNotification(false));
 
         } else if (intent != null) {
             // Process new intent data
@@ -114,7 +148,7 @@ public class OverlayControlService extends Service {
             boolean turnOff = intent.getBooleanExtra(EXTRA_TURN_OFF, false);
 
             if (turnOff) {
-                Log.d(TAG, "Turning off...");
+                Log.e(TAG, "Turning off...");
 
                 stopForeground(true);
                 stopSelf();
@@ -123,29 +157,22 @@ public class OverlayControlService extends Service {
     }
 
     private void respondToScreenshot(String path) {
-        Notification.Builder builder = new Notification.Builder(this)
-                .setSmallIcon(R.drawable.ic_launcher)
-                .setContentTitle("New Screenshot Detected!")
-                .setContentText("Tap to view the new screenshot");
-
-        Intent imageIntent = new Intent(this, ImageViewer.class);
-        imageIntent.setDataAndType(Uri.parse("file://" + path), "image/*");
-
-        PendingIntent resultPendingIntent = PendingIntent.getActivity(this, 0, imageIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-        builder.setContentIntent(resultPendingIntent);
-
-        //mNotificationManager.notify(NOTIFICATION_ID, builder.getNotification());
+        mNotificationManager.notify(NOTIFICATION_ID, getControllerNotification(true));
+        new OcrAsyncTask().execute(path);
     }
 
-    private Notification getControllerNotification() {
+    private Notification getControllerNotification(boolean isWorking) {
         Intent turnOffIntent = new Intent(this, OverlayControlService.class);
         turnOffIntent.putExtra(EXTRA_TURN_OFF, true);
         PendingIntent turnOffPendingIntent = PendingIntent.getService(this, 0, turnOffIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
+        String contentText = isWorking ? getString(R.string.ongoing_notification_scanning)
+                : getString(R.string.ongoing_notification_desc);
+
         Notification.Builder builder = new Notification.Builder(this)
                 .setSmallIcon(R.drawable.ic_launcher)
                 .setContentTitle(getString(R.string.ongoing_notification_title))
-                .setContentText(getString(R.string.ongoing_notification_desc))
+                .setContentText(contentText)
                 .setOngoing(true);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
@@ -156,28 +183,123 @@ public class OverlayControlService extends Service {
         return builder.getNotification();
     }
 
-    private void getScreenshotUsingRoot() {
+    private void displayOverlay(String data) {
+        if (data == null || data.trim().length() == 0) return;
 
-        mHandler.postDelayed(new Runnable() {
+        final WindowManager windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        windowManager.getDefaultDisplay().getMetrics(displayMetrics);
+
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+                PixelFormat.TRANSLUCENT);
+
+        lp.height = displayMetrics.heightPixels;
+        lp.width = displayMetrics.widthPixels;
+
+        final RelativeLayout screenLayout = new RelativeLayout(CONTEXT);
+
+        final RelativeLayout overlayLayout = new RelativeLayout(CONTEXT);
+        overlayLayout.setBackgroundColor(Color.parseColor("#88000000"));
+        screenLayout.addView(overlayLayout);
+        RelativeLayout.LayoutParams overlayLp = (RelativeLayout.LayoutParams) overlayLayout.getLayoutParams();
+        overlayLp.height = ViewGroup.LayoutParams.MATCH_PARENT;
+        overlayLp.width = ViewGroup.LayoutParams.MATCH_PARENT;
+
+        TextView exampleLabel = (TextView) LayoutInflater.from(CONTEXT).inflate(R.layout.overlay_item, screenLayout, false);
+        RelativeLayout.LayoutParams labelLp = (RelativeLayout.LayoutParams) exampleLabel.getLayoutParams();
+        labelLp.addRule(RelativeLayout.CENTER_IN_PARENT);
+
+        exampleLabel.setText(data);
+        overlayLayout.addView(exampleLabel);
+        overlayLayout.setVisibility(View.INVISIBLE);
+
+        windowManager.addView(screenLayout, lp);
+
+        final AlphaAnimation alphaInAnim = new AlphaAnimation(0.0f, 1.0f);
+        alphaInAnim.setDuration(400);
+        alphaInAnim.setInterpolator(new DecelerateInterpolator());
+        alphaInAnim.setAnimationListener(new Animation.AnimationListener() {
             @Override
-            public void run() {
-                Log.e(TAG, "ATTEMPTING TO TAKE A SCREENSHOT WITH ROOT ACCESS");
-
-                // image naming and path  to include sd card  appending name you choose for file
-                String mPath = Environment.getExternalStorageDirectory().toString() + "/" + "AnnoverseScreenshot.jpg";
-
-                try {
-                    Process sh = Runtime.getRuntime().exec("su", null, null);
-                    OutputStream  os = sh.getOutputStream();
-                    os.write(("/system/bin/screencap -p " + mPath).getBytes("ASCII"));
-                    os.flush();
-                } catch (IOException e) {
-                    Log.e(TAG, "SCREENSHOT DIDN'T WORK");
-                    e.printStackTrace();
-                }
+            public void onAnimationStart(Animation animation) {
 
             }
-        }, 300);
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                overlayLayout.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+
+        overlayLayout.startAnimation(alphaInAnim);
+
+        final AlphaAnimation alphaOutAnim = new AlphaAnimation(1.0f, 0.0f);
+        alphaOutAnim.setDuration(400);
+        alphaOutAnim.setInterpolator(new DecelerateInterpolator());
+        alphaOutAnim.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                windowManager.removeView(screenLayout);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+
+        screenLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                overlayLayout.startAnimation(alphaOutAnim);
+            }
+        });
+    }
+
+    private class OcrAsyncTask extends AsyncTask<String, Void, String> {
+
+        @Override
+        protected String doInBackground(String... paths) {
+            if (paths == null || paths.length == 0) return null;
+            String path = "file://" + paths[0];
+
+            Uri uri = Uri.parse(path);
+
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+
+            Bitmap bitmap = BitmapFactory.decodeFile(uri.getPath(), options);
+
+            if (bitmap != null) {
+
+                BitmapUtils.correctBitmapOrientation(CONTEXT, bitmap, uri.getPath(), false);
+                mTessApi.setImage(bitmap);
+                return mTessApi.getUTF8Text();
+
+            } else {
+                Log.e(TAG, "Bitmap was null");
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            displayOverlay(result);
+            mNotificationManager.notify(NOTIFICATION_ID, getControllerNotification(false));
+        }
     }
 
     public class OverlayControlBinder extends Binder {
