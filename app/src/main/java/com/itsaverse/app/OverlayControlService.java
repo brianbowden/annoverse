@@ -48,6 +48,7 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.util.List;
 
 import retrofit.Callback;
 import retrofit.RetrofitError;
@@ -288,10 +289,38 @@ public class OverlayControlService extends Service {
         });
     }
 
-    private class OcrAsyncTask extends AsyncTask<String, Void, String> {
+    private void requestPassage(String unencodedPassage) {
+        String passage = null;
+
+        try {
+            passage = URLEncoder.encode(unencodedPassage, Charset.defaultCharset().name());
+
+        } catch (UnsupportedEncodingException e) {
+            Log.e(TAG, "Error encoding the passage: " + e != null ? e.getMessage() : "");
+            return;
+        }
+
+        Callback<String> callback = new Callback<String>() {
+            @Override
+            public void success(String passageText, Response response) {
+                displayOverlay(passageText);
+                mNotificationManager.notify(NOTIFICATION_ID, getControllerNotification(false));
+            }
+
+            @Override
+            public void failure(RetrofitError retrofitError) {
+                Toast.makeText(CONTEXT, "Unable to look up passage!", Toast.LENGTH_LONG);
+                Log.e(TAG, "Unable to look up passage: " + retrofitError != null ? retrofitError.getMessage() : "");
+            }
+        };
+
+        VerseFetcher.requestEsvPassage("IP", passage, callback);
+    }
+
+    private class OcrAsyncTask extends AsyncTask<String, Void, List<DataUtils.VerseReference>> {
 
         @Override
-        protected String doInBackground(String... paths) {
+        protected List<DataUtils.VerseReference> doInBackground(String... paths) {
             if (paths == null || paths.length == 0) return null;
             String path = "file://" + paths[0];
 
@@ -306,11 +335,7 @@ public class OverlayControlService extends Service {
 
                 BitmapUtils.correctBitmapOrientation(CONTEXT, bitmap, uri.getPath(), false);
                 mTessApi.setImage(bitmap);
-                String fullText = mTessApi.getUTF8Text();
-
-                String testPassage = "John 3:1-5";
-
-                return testPassage;
+                return DataUtils.getVerseReferences(mTessApi.getUTF8Text());
 
             } else {
                 Log.e(TAG, "Bitmap was null");
@@ -320,33 +345,14 @@ public class OverlayControlService extends Service {
         }
 
         @Override
-        protected void onPostExecute(String result) {
+        protected void onPostExecute(List<DataUtils.VerseReference> result) {
+            String test = "";
 
-            String passage = null;
-
-            try {
-                passage = URLEncoder.encode(result, Charset.defaultCharset().name());
-
-            } catch (UnsupportedEncodingException e) {
-                Log.e(TAG, "Error encoding the passage: " + e != null ? e.getMessage() : "");
-                return;
+            for (DataUtils.VerseReference ref : result) {
+                test += ref.text + "<br/>";
             }
 
-            Callback<String> callback = new Callback<String>() {
-                @Override
-                public void success(String passageText, Response response) {
-                    displayOverlay(passageText);
-                    mNotificationManager.notify(NOTIFICATION_ID, getControllerNotification(false));
-                }
-
-                @Override
-                public void failure(RetrofitError retrofitError) {
-                    Toast.makeText(CONTEXT, "Unable to look up passage!", Toast.LENGTH_LONG);
-                    Log.e(TAG, "Unable to look up passage: " + retrofitError != null ? retrofitError.getMessage() : "");
-                }
-            };
-
-            VerseFetcher.requestEsvPassage("IP", passage, callback);
+            displayOverlay(test);
         }
     }
 

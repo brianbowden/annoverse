@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -57,11 +58,17 @@ public class DataUtils {
     public static List<VerseReference> getVerseReferences(String fullText) {
         List<VerseReference> refs = new ArrayList<VerseReference>();
 
-        Pattern regex = Pattern.compile(VerseReference.REGEX);
+        Pattern regex = Pattern.compile(VerseReference.REGEX, Pattern.CASE_INSENSITIVE);
         Matcher matcher = regex.matcher(fullText);
 
         while (matcher.find()) {
-            refs.add(new VerseReference(matcher.group(), matcher.start(), matcher.end()));
+            // Get rid of this ridiculous long dash
+            String candidate = matcher.group().replace("—", "-");
+            String book = matcher.group(4).toLowerCase();
+
+            if (VerseReference.BOOK_VARIATIONS.contains(book)) {
+                refs.add(new VerseReference(candidate, matcher.start(), matcher.end()));
+            }
         }
 
         return refs;
@@ -69,9 +76,152 @@ public class DataUtils {
 
     public static class VerseReference {
 
-        public static final String REGEX = "\\b(((1|2|3|i|ii|iii)\\s)?(\\w+|(song of \\w+))\\.?)(\\s)((\\s?([,-–]|," +
+        public static final String REGEX = "\\b(((1|2|3|i|ii|iii)\\s)?(\\w+|(song of \\w+))\\.?)(\\s)((\\s?((,|\\-|–|—|;)|," +
                 "? and|to)\\s?)?(?!([12] (sam|king|chron|cor|thes|tim|pet|john)))(\\d{1,3})((:)(((,|,? " +
-                "and|to)\\s?)?(\\d{1,3}(?!:))(\\s?(-|–)\\s?\\d{1,3}(?!:))?)+)?)+\\b";
+                "and|to)\\s?)?(\\d{1,3}(?!:))(\\s?(\\-|–|—)\\s?\\d{1,3}(?!:))?)+)?)+\\b";
+
+        public static final List<String> BOOK_VARIATIONS = Arrays.asList(
+                "amos",
+                "am",
+                "chronicles",
+                "chron",
+                "chr",
+                "daniel",
+                "dan",
+                "dn",
+                "deuteronomy",
+                "deut",
+                "dt",
+                "ecclesiastes",
+                "eccles",
+                "eccl",
+                "esther",
+                "est",
+                "exodus",
+                "exod",
+                "ex",
+                "ezekiel",
+                "ezek",
+                "ez",
+                "ezra",
+                "ezr",
+                "genesis",
+                "gen",
+                "gn",
+                "habakkuk",
+                "hab",
+                "hb",
+                "haggai",
+                "hag",
+                "hg",
+                "hosea",
+                "hos",
+                "isaiah",
+                "isa",
+                "is",
+                "jeremiah",
+                "jer",
+                "job",
+                "jb",
+                "joel",
+                "jl",
+                "jonah",
+                "jon",
+                "joshua",
+                "josh",
+                "jo",
+                "judges",
+                "judg",
+                "jgs",
+                "kings",
+                "kgs",
+                "lamentations",
+                "lam",
+                "leviticus",
+                "lev",
+                "lv",
+                "malachi",
+                "mal",
+                "micah",
+                "mic",
+                "mi",
+                "nahum",
+                "nah",
+                "na",
+                "nehemiah",
+                "neh",
+                "numbers",
+                "num",
+                "nm",
+                "obadiah",
+                "obad",
+                "ob",
+                "proverbs",
+                "prov",
+                "prv",
+                "psalms",
+                "ps",
+                "pss",
+                "ruth",
+                "ru",
+                "samuel",
+                "sam",
+                "sm",
+                "song of solomon",
+                "song of sol",
+                "song of songs",
+                "song of sg",
+                "zechariah",
+                "zech",
+                "zec",
+                "zephaniah",
+                "zeph",
+                "zep",
+                "acts",
+                "colossians",
+                "col",
+                "corinthians",
+                "cor",
+                "ephesians",
+                "eph",
+                "galatians",
+                "gal",
+                "hebrews",
+                "heb",
+                "james",
+                "jas",
+                "john",
+                "jn",
+                "jude",
+                "luke",
+                "lk",
+                "mark",
+                "mk",
+                "matthew",
+                "matt",
+                "mt",
+                "peter",
+                "pet",
+                "pt",
+                "philemon",
+                "philem",
+                "phlm",
+                "philippians",
+                "phil",
+                "revelation",
+                "rev",
+                "rv",
+                "romans",
+                "rom",
+                "thessalonians",
+                "thess",
+                "thes",
+                "timothy",
+                "tim",
+                "tm",
+                "titus",
+                "ti"
+        );
 
         public String text;
         public int startIndex;
