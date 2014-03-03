@@ -326,16 +326,36 @@ public class OverlayControlService extends Service {
 
             Uri uri = Uri.parse(path);
 
+            long startTime = 0;
+            long endTime = 0;
+
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inPreferredConfig = Bitmap.Config.ARGB_8888;
 
+            startTime = System.currentTimeMillis();
             Bitmap bitmap = BitmapFactory.decodeFile(uri.getPath(), options);
+            endTime = System.currentTimeMillis();
+
+            Log.e(TAG, "Bitmap Decode: " + (endTime - startTime) + "ms");
 
             if (bitmap != null) {
 
+                startTime = System.currentTimeMillis();
                 BitmapUtils.correctBitmapOrientation(CONTEXT, bitmap, uri.getPath(), false);
+                endTime = System.currentTimeMillis();
+                Log.e(TAG, "Bitmap Orientate: " + (endTime - startTime) + "ms");
+
+                startTime = System.currentTimeMillis();
                 mTessApi.setImage(bitmap);
-                return DataUtils.getVerseReferences(mTessApi.getUTF8Text());
+                endTime = System.currentTimeMillis();
+                Log.e(TAG, "Perform OCR: " + (endTime - startTime) + "ms");
+
+                startTime = System.currentTimeMillis();
+                List<DataUtils.VerseReference> refs = DataUtils.getVerseReferences(mTessApi.getUTF8Text());
+                endTime = System.currentTimeMillis();
+                Log.e(TAG, "Perform Verse Regex: " + (endTime - startTime) + "ms");
+
+                return refs;
 
             } else {
                 Log.e(TAG, "Bitmap was null");
@@ -351,6 +371,8 @@ public class OverlayControlService extends Service {
             for (DataUtils.VerseReference ref : result) {
                 test += ref.text + "<br/>";
             }
+
+            Log.e(TAG, "Results: " + test);
 
             displayOverlay(test);
         }

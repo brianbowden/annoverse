@@ -76,9 +76,9 @@ public class DataUtils {
 
     public static class VerseReference {
 
-        public static final String REGEX = "\\b(((1|2|3|i|ii|iii)\\s)?(\\w+|(song of \\w+))\\.?)(\\s)((\\s?((,|\\-|–|—|;)|," +
+        public static final String REGEX = "(((1|2|3|i|ii|iii)\\s)?(\\w+|(song of \\w+))\\.?)(\\s)((\\s?((,|\\-|–|—|;)|," +
                 "? and|to)\\s?)?(?!([12] (sam|king|chron|cor|thes|tim|pet|john)))(\\d{1,3})((:)(((,|,? " +
-                "and|to)\\s?)?(\\d{1,3}(?!:))(\\s?(\\-|–|—)\\s?\\d{1,3}(?!:))?)+)?)+\\b";
+                "and|to)\\s?)?(\\d{1,3}(?!:))(\\s?(\\-|–|—)\\s?\\d{1,3}(?!:))?)+)?)+";
 
         public static final List<String> BOOK_VARIATIONS = Arrays.asList(
                 "amos",
@@ -160,6 +160,7 @@ public class DataUtils {
                 "prov",
                 "prv",
                 "psalms",
+                "psalm",
                 "ps",
                 "pss",
                 "ruth",
