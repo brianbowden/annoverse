@@ -56,38 +56,41 @@ public class DataUtils {
     }
 
     public static List<VerseReference> getVerseReferences(String fullText) {
+
+        fullText = fullText.replace("–", "-").replace("—", "-");
+
         List<VerseReference> refs = new ArrayList<VerseReference>();
 
-        Pattern regex = Pattern.compile(VerseReference.REGEX, Pattern.CASE_INSENSITIVE);
+        Pattern regex = Pattern.compile(String.format(VerseReference.REGEX));
         Matcher matcher = regex.matcher(fullText);
 
         while (matcher.find()) {
             // Get rid of this ridiculous long dash
-            String candidate = matcher.group().replace("—", "-");
-            String book = matcher.group(4).toLowerCase();
+            String candidate = matcher.group();
+            String book = matcher.group(3).toLowerCase();
 
             if (VerseReference.BOOK_VARIATIONS.contains(book)) {
                 refs.add(new VerseReference(candidate, matcher.start(), matcher.end()));
             }
         }
 
+        refs.add(new VerseReference(fullText, 0, 0));
+
         return refs;
     }
 
     public static class VerseReference {
 
-        public static final String REGEX = "(((1|2|3|i|ii|iii)\\s)?(\\w+|(song of \\w+))\\.?)(\\s)((\\s?((,|\\-|–|—|;)|," +
-                "? and|to)\\s?)?(?!([12] (sam|king|chron|cor|thes|tim|pet|john)))(\\d{1,3})((:)(((,|,? " +
-                "and|to)\\s?)?(\\d{1,3}(?!:))(\\s?(\\-|–|—)\\s?\\d{1,3}(?!:))?)+)?)+";
+        public static final String REGEX = "(\\d|[iI]{1,3}+(\\s))?(\\w++|(song of \\w++))(\\s)(\\d[\\d\\s,;:\\-and\\&]*)";
 
         public static final List<String> BOOK_VARIATIONS = Arrays.asList(
                 "amos",
-                "am",
+                "am\\.",
                 "chronicles",
                 "chron",
                 "chr",
                 "daniel",
-                "dan",
+                "dan\\.",
                 "dn",
                 "deuteronomy",
                 "deut",
@@ -96,10 +99,10 @@ public class DataUtils {
                 "eccles",
                 "eccl",
                 "esther",
-                "est",
+                "est\\.",
                 "exodus",
                 "exod",
-                "ex",
+                "ex\\.",
                 "ezekiel",
                 "ezek",
                 "ez",
@@ -112,13 +115,13 @@ public class DataUtils {
                 "hab",
                 "hb",
                 "haggai",
-                "hag",
+                "hag.",
                 "hg",
                 "hosea",
                 "hos",
                 "isaiah",
                 "isa",
-                "is",
+                "is\\.",
                 "jeremiah",
                 "jer",
                 "job",
@@ -126,7 +129,7 @@ public class DataUtils {
                 "joel",
                 "jl",
                 "jonah",
-                "jon",
+                "jon.",
                 "joshua",
                 "josh",
                 "jo",

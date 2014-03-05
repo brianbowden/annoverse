@@ -3,14 +3,68 @@ package com.itsaverse.app.utils;
 import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
 import android.media.ExifInterface;
 import android.provider.MediaStore;
 import android.util.Log;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 public class BitmapUtils {
+
+    public static Bitmap scaleBitmap(Bitmap bitmap, float pct) {
+        return Bitmap.createScaledBitmap(bitmap, Math.round(bitmap.getWidth() * pct),
+                Math.round(bitmap.getHeight() * pct), true);
+    }
+
+    public static Bitmap decodeBitmap(Context ctx, File f, int maxDimension) {
+        Bitmap b = null;
+        try {
+            FileInputStream fis = new FileInputStream(f);
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+
+            BitmapFactory.decodeStream(fis, null, options);
+            fis.close();
+            final int maxDim = maxDimension;
+            final int height = options.outHeight;
+            final int width = options.outWidth;
+
+            int sampleSize = 1;
+            if (height > maxDim || width > maxDim) {
+                if (height > width) {
+                    sampleSize = Math.round((float) height / maxDim);
+                } else {
+                    sampleSize = Math.round((float) width / maxDim);
+                }
+            }
+
+            options.inSampleSize = sampleSize;
+            options.inJustDecodeBounds = false;
+            fis = new FileInputStream(f);
+            b = BitmapFactory.decodeStream(fis, null, options);
+            fis.close();
+            return correctBitmapOrientation(ctx, b, f.getAbsolutePath(), false);
+
+        } catch (FileNotFoundException fnfe) {
+            Log.e("SD IMAGE LOAD", "Error loading image from SD card: " + fnfe.getMessage());
+        } catch (IOException ioe) {
+            Log.e("SD IMAGE LOAD", "Error loading image from SD card: " + ioe.getMessage());
+        } catch (OutOfMemoryError ioe) {
+            if (b != null) {
+                b.recycle();
+            }
+
+            Log.e("SD IMAGE LOAD", "Error loading image from SD card: " + ioe.getMessage());
+            return null;
+        }
+
+        return null;
+    }
 
     public static Bitmap correctBitmapOrientation(Context ctx, Bitmap bitmap, String path, boolean fromCamera) {
         ExifInterface exif = null;

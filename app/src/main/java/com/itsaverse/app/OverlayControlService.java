@@ -43,6 +43,7 @@ import com.itsaverse.app.utils.DataUtils;
 import com.itsaverse.app.utils.NetworkUtils;
 import com.itsaverse.app.utils.RecursiveFileObserver;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
@@ -347,11 +348,12 @@ public class OverlayControlService extends Service {
 
                 startTime = System.currentTimeMillis();
                 mTessApi.setImage(bitmap);
+                String fullText = mTessApi.getUTF8Text();
                 endTime = System.currentTimeMillis();
                 Log.e(TAG, "Perform OCR: " + (endTime - startTime) + "ms");
 
                 startTime = System.currentTimeMillis();
-                List<DataUtils.VerseReference> refs = DataUtils.getVerseReferences(mTessApi.getUTF8Text());
+                List<DataUtils.VerseReference> refs = DataUtils.getVerseReferences(fullText);
                 endTime = System.currentTimeMillis();
                 Log.e(TAG, "Perform Verse Regex: " + (endTime - startTime) + "ms");
 
