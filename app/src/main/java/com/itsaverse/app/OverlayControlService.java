@@ -1,13 +1,14 @@
 package com.itsaverse.app;
 
 import android.app.ActionBar;
-import android.app.Dialog;
+import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -21,7 +22,6 @@ import android.os.FileObserver;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
-import android.os.Message;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -30,22 +30,17 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.view.animation.DecelerateInterpolator;
-import android.webkit.MimeTypeMap;
 import android.webkit.WebView;
 import android.widget.RelativeLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.googlecode.tesseract.android.TessBaseAPI;
 import com.itsaverse.app.utils.BitmapUtils;
 import com.itsaverse.app.utils.DataUtils;
-import com.itsaverse.app.utils.NetworkUtils;
 import com.itsaverse.app.utils.RecursiveFileObserver;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
@@ -60,6 +55,10 @@ public class OverlayControlService extends Service {
     public static final String EXTRA_TURN_OFF = "TurnOff";
     public static final String BROADCAST_ALIVE = "com.itsaverse.app.alive";
 
+    public static Bitmap getScreenshot() {
+        return sScreenshot;
+    }
+
     public static boolean isAlive() {
         return sIsAlive;
     }
@@ -67,6 +66,7 @@ public class OverlayControlService extends Service {
     private static final String TAG = "OverlayControlService";
     private static final int NOTIFICATION_ID = 89384;
     private static boolean sIsAlive = false;
+    private static Bitmap sScreenshot;
 
     private final Context CONTEXT = this;
 
@@ -77,6 +77,9 @@ public class OverlayControlService extends Service {
     private TessBaseAPI mTessApi;
 
     private boolean mIsInitialized = false;
+
+    // Overlay Views
+    private RelativeLayout mLoadingOverlayLayout;
 
     @Override
     public void onCreate() {
@@ -167,7 +170,7 @@ public class OverlayControlService extends Service {
 
             if (turnOff) {
                 Log.e(TAG, "Turning off...");
-
+                clearLoadingIndicator();
                 stopForeground(true);
                 stopSelf();
             }
@@ -201,10 +204,54 @@ public class OverlayControlService extends Service {
         return builder.getNotification();
     }
 
+    private void displayLoadingIndicator() {
+
+        final WindowManager windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        windowManager.getDefaultDisplay().getMetrics(displayMetrics);
+
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.TYPE_SYSTEM_OVERLAY,
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
+                PixelFormat.TRANSLUCENT);
+
+        Resources resources = CONTEXT.getResources();
+        int navBarHeight = 0;
+        int statusBarHeight = 0;
+        int navBarId = resources.getIdentifier("navigation_bar_height", "dimen", "android");
+        int statusBarId = resources.getIdentifier("status_bar_height", "dimen", "android");
+        if (navBarId > 0) {
+            navBarHeight = resources.getDimensionPixelSize(navBarId);
+        }
+        if (statusBarId > 0) {
+            statusBarHeight = resources.getDimensionPixelSize(statusBarId);
+        }
+
+        lp.height = displayMetrics.heightPixels - navBarHeight + statusBarHeight;
+        lp.width = displayMetrics.widthPixels;
+
+        mLoadingOverlayLayout = (RelativeLayout) LayoutInflater.from(CONTEXT).inflate(R.layout.loading_indicator_layout, null);
+        View loadingIndicatorImage = mLoadingOverlayLayout.findViewById(R.id.loading_indicator_image);
+        loadingIndicatorImage.startAnimation(AnimationUtils.loadAnimation(CONTEXT, R.anim.continuous_rotation));
+
+        windowManager.addView(mLoadingOverlayLayout, lp);
+    }
+
+    private void clearLoadingIndicator() {
+        if (mLoadingOverlayLayout != null) {
+            ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(mLoadingOverlayLayout);
+        }
+    }
+
     private void displayOverlay(String data) {
         if (data == null || data.trim().length() == 0) return;
 
-        final WindowManager windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+        Intent viewerIntent = new Intent(CONTEXT, ImageViewerActivity.class);
+        viewerIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(viewerIntent);
+
+        /**final WindowManager windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
 
         DisplayMetrics displayMetrics = new DisplayMetrics();
         windowManager.getDefaultDisplay().getMetrics(displayMetrics);
@@ -287,7 +334,7 @@ public class OverlayControlService extends Service {
             public void onClick(View v) {
                 overlayLayout.startAnimation(alphaOutAnim);
             }
-        });
+        }); **/
     }
 
     private void requestPassage(String unencodedPassage) {
@@ -321,6 +368,16 @@ public class OverlayControlService extends Service {
     private class OcrAsyncTask extends AsyncTask<String, Void, List<DataUtils.VerseReference>> {
 
         @Override
+        public void onPreExecute() {
+            mHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    displayLoadingIndicator();
+                }
+            });
+        }
+
+        @Override
         protected List<DataUtils.VerseReference> doInBackground(String... paths) {
             if (paths == null || paths.length == 0) return null;
             String path = "file://" + paths[0];
@@ -334,20 +391,20 @@ public class OverlayControlService extends Service {
             options.inPreferredConfig = Bitmap.Config.ARGB_8888;
 
             startTime = System.currentTimeMillis();
-            Bitmap bitmap = BitmapFactory.decodeFile(uri.getPath(), options);
+            sScreenshot = BitmapFactory.decodeFile(uri.getPath(), options);
             endTime = System.currentTimeMillis();
 
             Log.e(TAG, "Bitmap Decode: " + (endTime - startTime) + "ms");
 
-            if (bitmap != null) {
+            if (sScreenshot != null) {
 
                 startTime = System.currentTimeMillis();
-                BitmapUtils.correctBitmapOrientation(CONTEXT, bitmap, uri.getPath(), false);
+                BitmapUtils.correctBitmapOrientation(CONTEXT, sScreenshot, uri.getPath(), false);
                 endTime = System.currentTimeMillis();
                 Log.e(TAG, "Bitmap Orientate: " + (endTime - startTime) + "ms");
 
                 startTime = System.currentTimeMillis();
-                mTessApi.setImage(bitmap);
+                mTessApi.setImage(sScreenshot);
                 String fullText = mTessApi.getUTF8Text();
                 endTime = System.currentTimeMillis();
                 Log.e(TAG, "Perform OCR: " + (endTime - startTime) + "ms");
@@ -368,6 +425,8 @@ public class OverlayControlService extends Service {
 
         @Override
         protected void onPostExecute(List<DataUtils.VerseReference> result) {
+            clearLoadingIndicator();
+
             String test = "";
 
             for (DataUtils.VerseReference ref : result) {
