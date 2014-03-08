@@ -61,9 +61,13 @@ public class ScreenShotImageView extends ImageView {
             Path clipPath = new Path();
 
             for (Box box : mClipBoxes) {
-                RectF rect = new RectF(box.getX(), box.getY() - box.getHeight() + mVerticalOffset,
-                        box.getX() + box.getWidth(), box.getY() + mVerticalOffset);
-                clipPath.addRect(rect, Path.Direction.CW);
+
+                int roundedEdge = Math.round(0.3f * box.getHeight());
+                int vertFix = Math.round(0.1f * box.getHeight()); // inexplicable
+                RectF rect = new RectF(box.getX(), box.getY() - box.getHeight() - roundedEdge - vertFix + mVerticalOffset,
+                        box.getX() + box.getWidth(), box.getY() + roundedEdge - vertFix + mVerticalOffset);
+
+                clipPath.addRoundRect(rect, roundedEdge, roundedEdge, Path.Direction.CW);
             }
 
             canvas.drawARGB(0, 0, 0, 0);
