@@ -116,25 +116,43 @@ public class DataUtils {
         int startY = 0;
         int endX = 0;
         int height = 0;
+        boolean boxStarted = false;
 
-        for (int position : wordPositions) {
+        // Get word positions
+
+        List<Integer> refWordPositions = getRefWordPositions(wordPositions, ref.startIndex, ref.stopIndex);
+
+        // Get position boxes
+
+        for (int position : refWordPositions) {
             if (position < words.size()) {
                 Box box = words.getBox(position);
 
-                if (positionBoxes.size() == 0) {
+                if (!boxStarted) {
 
                     startX = box.getX();
                     startY = box.getY();
                     endX = box.getX() + box.getWidth();
                     height = box.getHeight();
+                    boxStarted = true;
 
-                } else if (positionBoxes.get(positionBoxes.size() - 1).getY() == startY) {
+                } else if (Math.abs(box.getY() - startY) < 0.5f * height) {
 
-                    endX = box.getX();
+                    // Keep sizes uniform
+
+                    if (box.getY() > startY) {
+                        startY = box.getY();
+                    }
+
+                    if (box.getHeight() > height) {
+                        height = box.getHeight();
+                    }
+
+                    endX = box.getX() + box.getWidth();
 
                 } else {
 
-                    positionBoxes.add(new Box(startX, startY, endX - startX, height));
+                    positionBoxes.add(new Box(startX, startY + getVertOffset(height), endX - startX, height));
 
                     startX = box.getX();
                     startY = box.getY();
@@ -142,18 +160,55 @@ public class DataUtils {
                     height = box.getHeight();
 
                 }
-
             }
         }
 
-        positionBoxes.add(new Box(startX, startY, endX - startX, height));
+        positionBoxes.add(new Box(startX, startY + getVertOffset(height), endX - startX, height));
 
         ref.setPosBoxes(positionBoxes);
     }
 
+    private static int getVertOffset(int height) {
+        // This is weird and possibly caused by the Tess's training
+        return height - 22;
+    }
+
+    private static List<Integer> getRefWordPositions(List<Integer> wordPositions, int startIndex, int stopIndex) {
+
+        List<Integer> refWordPositions = new ArrayList<Integer>();
+
+        boolean completed = false;
+
+        for (int i = 0; i < wordPositions.size(); i++) {
+            if (refWordPositions.size() > 0 && wordPositions.get(i) > stopIndex) {
+
+                refWordPositions.add(i - 1);
+                completed = true;
+                break;
+
+            } else if (refWordPositions.size() > 0) {
+
+                refWordPositions.add(i - 1);
+
+            } else if (wordPositions.get(i) > startIndex && i > 0) {
+
+                refWordPositions.add(i - 1);
+
+                if (wordPositions.get(i) > stopIndex) {
+                    completed = true;
+                    break;
+                }
+            }
+        }
+
+        if (!completed) refWordPositions.add(wordPositions.size() - 1);
+
+        return refWordPositions;
+    }
+
     public static class VerseReference {
 
-        public static final String REGEX = "(\\d|[iI]{1,3}+(\\s))?(\\w++|(song of \\w++))(\\s)(\\d[\\d\\s,;:\\-and\\&]*)";
+        public static final String REGEX = "(\\d|[iI]{1,3}+(\\s))?(\\w++|(song of \\w++))(\\s)([\\d\\s,;:\\-and\\&]*\\d)";
 
         public static final List<String> BOOK_VARIATIONS = Arrays.asList(
                 "amos",
@@ -302,7 +357,7 @@ public class DataUtils {
         public String text;
         public int startIndex;
         public int stopIndex;
-        List<Box> posBoxes;
+        public List<Box> posBoxes;
 
         public VerseReference(String text, int startIndex, int stopIndex) {
             this.text = text;

@@ -1,7 +1,5 @@
 package com.itsaverse.app;
 
-import android.app.ActionBar;
-import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -11,7 +9,6 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -26,13 +23,8 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.view.animation.AlphaAnimation;
-import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import android.view.animation.DecelerateInterpolator;
-import android.webkit.WebView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
@@ -61,6 +53,9 @@ public class OverlayControlService extends Service {
     public static Bitmap getScreenshot() {
         return sScreenshot;
     }
+    public static List<DataUtils.VerseReference> getVerseReferences() {
+        return sVerseRefs;
+    }
 
     public static boolean isAlive() {
         return sIsAlive;
@@ -72,6 +67,7 @@ public class OverlayControlService extends Service {
     private static final int NOTIFICATION_ID = 89384;
     private static boolean sIsAlive = false;
     private static Bitmap sScreenshot;
+    private static List<DataUtils.VerseReference> sVerseRefs;
 
     private final Context CONTEXT = this;
 
@@ -206,7 +202,7 @@ public class OverlayControlService extends Service {
                 : getString(R.string.ongoing_notification_desc);
 
         Notification.Builder builder = new Notification.Builder(this)
-                .setSmallIcon(R.drawable.ic_launcher)
+                .setSmallIcon(R.drawable.loading_icon)
                 .setContentTitle(getString(R.string.ongoing_notification_title))
                 .setContentText(contentText)
                 .setOngoing(true);
@@ -421,18 +417,18 @@ public class OverlayControlService extends Service {
 
                 startTime = System.currentTimeMillis();
                 mTessApi.setImage(sScreenshot);
-                //String fullText = mTessApi.getUTF8Text();
-                String fullText = mTessApi.getHOCRText(0);
+                String fullText = mTessApi.getUTF8Text();
+                Pixa words = mTessApi.getWords();
 
                 endTime = System.currentTimeMillis();
                 Log.e(TAG, "Perform OCR: " + (endTime - startTime) + "ms");
 
                 startTime = System.currentTimeMillis();
-                List<DataUtils.VerseReference> refs = DataUtils.getVerseReferences(fullText);
+                sVerseRefs = DataUtils.getVerseReferences(fullText, words);
                 endTime = System.currentTimeMillis();
                 Log.e(TAG, "Perform Verse Regex: " + (endTime - startTime) + "ms");
 
-                return refs;
+                return sVerseRefs;
 
             } else {
                 Log.e(TAG, "Bitmap was null");

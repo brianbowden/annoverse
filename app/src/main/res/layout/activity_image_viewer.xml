@@ -12,6 +12,13 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#88000000" />
+        android:background="#88000000"/>
+
+    <com.itsaverse.app.views.ScreenShotImageView
+        android:id="@+id/image_viewer_overlay_image"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:background="@android:color/transparent"/>
 
 </RelativeLayout>

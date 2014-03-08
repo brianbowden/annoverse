@@ -3,12 +3,19 @@ package com.itsaverse.app;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.Window;
-import android.widget.ImageView;
 import android.widget.Toast;
+
+import com.googlecode.leptonica.android.Box;
+import com.itsaverse.app.utils.DataUtils;
+import com.itsaverse.app.views.ScreenShotImageView;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ImageViewerActivity extends Activity {
 
-    private ImageView mImage;
+    private ScreenShotImageView mBaseImage;
+    private ScreenShotImageView mOverlayImage;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -16,7 +23,8 @@ public class ImageViewerActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_image_viewer);
 
-        mImage = (ImageView) findViewById(R.id.image_viewer_image);
+        mBaseImage = (ScreenShotImageView) findViewById(R.id.image_viewer_image);
+        mOverlayImage = (ScreenShotImageView) findViewById(R.id.image_viewer_overlay_image);
     }
 
     @Override
@@ -24,7 +32,18 @@ public class ImageViewerActivity extends Activity {
         super.onResume();
 
         if (OverlayControlService.getScreenshot() != null) {
-            mImage.setImageBitmap(OverlayControlService.getScreenshot());
+            mBaseImage.setImageBitmap(OverlayControlService.getScreenshot());
+            mOverlayImage.setImageBitmap(OverlayControlService.getScreenshot());
+
+            List<Box> boxes = new ArrayList<Box>();
+            for (DataUtils.VerseReference ref : OverlayControlService.getVerseReferences()) {
+                if (ref.posBoxes != null) {
+                    boxes.addAll(ref.posBoxes);
+                }
+            }
+
+            mOverlayImage.setClipBoxes(boxes);
+
         } else {
             Toast.makeText(this, "No screenshot to display!", Toast.LENGTH_LONG);
         }
