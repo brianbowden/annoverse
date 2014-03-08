@@ -5,6 +5,9 @@ import android.content.res.AssetManager;
 import android.os.Environment;
 import android.util.Log;
 
+import com.googlecode.leptonica.android.Box;
+import com.googlecode.leptonica.android.Pixa;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -55,14 +58,15 @@ public class DataUtils {
         }
     }
 
-    public static List<VerseReference> getVerseReferences(String fullText) {
+    public static List<VerseReference> getVerseReferences(String utf8Text, Pixa words) {
 
-        fullText = fullText.replace("–", "-").replace("—", "-");
+        utf8Text = utf8Text.replace("–", "-").replace("—", "-");
 
         List<VerseReference> refs = new ArrayList<VerseReference>();
+        List<Integer> wordPositions = getAllWordPositions(utf8Text);
 
         Pattern regex = Pattern.compile(String.format(VerseReference.REGEX));
-        Matcher matcher = regex.matcher(fullText);
+        Matcher matcher = regex.matcher(utf8Text);
 
         while (matcher.find()) {
             // Get rid of this ridiculous long dash
@@ -70,13 +74,81 @@ public class DataUtils {
             String book = matcher.group(3).toLowerCase();
 
             if (VerseReference.BOOK_VARIATIONS.contains(book)) {
-                refs.add(new VerseReference(candidate, matcher.start(), matcher.end()));
+                VerseReference ref = new VerseReference(candidate, matcher.start(), matcher.end());
+                setPositionBoxes(ref, wordPositions, words);
+                refs.add(ref);
             }
         }
 
-        refs.add(new VerseReference(fullText, 0, 0));
-
         return refs;
+    }
+
+    private static List<Integer> getAllWordPositions(String utf8text) {
+        List<Integer> positions = new ArrayList<Integer>();
+
+        boolean isSpace = false;
+        boolean wordStarted = false;
+        int wordStart = 0;
+
+        for (int i = 0; i < utf8text.length(); i++) {
+            char c = utf8text.charAt(i);
+            isSpace = Character.isWhitespace(c);
+
+            if (!isSpace && !wordStarted) {
+                wordStarted = true;
+                wordStart = i;
+
+            } else if (isSpace && wordStarted) {
+                positions.add(wordStart);
+                wordStarted = false;
+            }
+        }
+
+        return positions;
+    }
+
+    private static void setPositionBoxes(VerseReference ref, List<Integer> wordPositions, Pixa words) {
+        if (ref == null || wordPositions == null || words == null) return;
+
+        List<Box> positionBoxes = new ArrayList<Box>();
+
+        int startX = 0;
+        int startY = 0;
+        int endX = 0;
+        int height = 0;
+
+        for (int position : wordPositions) {
+            if (position < words.size()) {
+                Box box = words.getBox(position);
+
+                if (positionBoxes.size() == 0) {
+
+                    startX = box.getX();
+                    startY = box.getY();
+                    endX = box.getX() + box.getWidth();
+                    height = box.getHeight();
+
+                } else if (positionBoxes.get(positionBoxes.size() - 1).getY() == startY) {
+
+                    endX = box.getX();
+
+                } else {
+
+                    positionBoxes.add(new Box(startX, startY, endX - startX, height));
+
+                    startX = box.getX();
+                    startY = box.getY();
+                    endX = box.getX() + box.getWidth();
+                    height = box.getHeight();
+
+                }
+
+            }
+        }
+
+        positionBoxes.add(new Box(startX, startY, endX - startX, height));
+
+        ref.setPosBoxes(positionBoxes);
     }
 
     public static class VerseReference {
@@ -230,11 +302,16 @@ public class DataUtils {
         public String text;
         public int startIndex;
         public int stopIndex;
+        List<Box> posBoxes;
 
         public VerseReference(String text, int startIndex, int stopIndex) {
             this.text = text;
             this.startIndex = startIndex;
             this.stopIndex = stopIndex;
+        }
+
+        public void setPosBoxes(List<Box> posBoxes) {
+            this.posBoxes = posBoxes;
         }
     }
 }

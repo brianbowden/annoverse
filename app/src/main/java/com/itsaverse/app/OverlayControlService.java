@@ -36,6 +36,7 @@ import android.webkit.WebView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import com.googlecode.leptonica.android.Pixa;
 import com.googlecode.tesseract.android.TessBaseAPI;
 import com.itsaverse.app.utils.BitmapUtils;
 import com.itsaverse.app.utils.DataUtils;
@@ -420,7 +421,9 @@ public class OverlayControlService extends Service {
 
                 startTime = System.currentTimeMillis();
                 mTessApi.setImage(sScreenshot);
-                String fullText = mTessApi.getUTF8Text();
+                //String fullText = mTessApi.getUTF8Text();
+                String fullText = mTessApi.getHOCRText(0);
+
                 endTime = System.currentTimeMillis();
                 Log.e(TAG, "Perform OCR: " + (endTime - startTime) + "ms");
 
