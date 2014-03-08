@@ -30,4 +30,17 @@
         android:text="@string/settings_turn_off"
         android:background="@drawable/selector_grey"/>
 
+    <Button
+        android:id="@+id/settings_load_last_button"
+        android:layout_width="100dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="20dp"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/settings_stop_button"
+        android:textColor="#f0f0f0"
+        android:textSize="15dp"
+        android:fontFamily="sans-serif-light"
+        android:text="Load Last"
+        android:background="@drawable/selector_grey"/>
+
 </RelativeLayout>

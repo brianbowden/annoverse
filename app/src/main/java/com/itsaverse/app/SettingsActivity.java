@@ -3,13 +3,10 @@ package com.itsaverse.app;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -65,6 +62,7 @@ public class SettingsActivity extends Activity {
 
         private SettingsActivity mActivity;
         private Button mStopStartButton;
+        private Button mLoadLastButton;
 
         private BroadcastReceiver mServiceAliveReceiver;
 
@@ -91,6 +89,8 @@ public class SettingsActivity extends Activity {
             View rootView = inflater.inflate(R.layout.fragment_settings, container, false);
 
             mStopStartButton = (Button) rootView.findViewById(R.id.settings_stop_button);
+            mLoadLastButton = (Button) rootView.findViewById(R.id.settings_load_last_button);
+
             mStopStartButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -101,6 +101,15 @@ public class SettingsActivity extends Activity {
                     } else {
                         mActivity.startService(serviceIntent);
                     }
+                }
+            });
+
+            mLoadLastButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent serviceIntent = new Intent(mActivity, OverlayControlService.class);
+                    serviceIntent.putExtra(OverlayControlService.EXTRA_LOAD_LAST, true);
+                    mActivity.startService(serviceIntent);
                 }
             });
 

@@ -40,6 +40,7 @@ import com.googlecode.tesseract.android.TessBaseAPI;
 import com.itsaverse.app.utils.BitmapUtils;
 import com.itsaverse.app.utils.DataUtils;
 import com.itsaverse.app.utils.RecursiveFileObserver;
+import com.itsaverse.app.utils.Utils;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -53,6 +54,7 @@ import retrofit.client.Response;
 public class OverlayControlService extends Service {
 
     public static final String EXTRA_TURN_OFF = "TurnOff";
+    public static final String EXTRA_LOAD_LAST = "LoadLast";
     public static final String BROADCAST_ALIVE = "com.itsaverse.app.alive";
 
     public static Bitmap getScreenshot() {
@@ -62,6 +64,8 @@ public class OverlayControlService extends Service {
     public static boolean isAlive() {
         return sIsAlive;
     }
+
+    private static final String STORE_LAST_SCREENSHOT = "LastScreenshot";
 
     private static final String TAG = "OverlayControlService";
     private static final int NOTIFICATION_ID = 89384;
@@ -77,6 +81,7 @@ public class OverlayControlService extends Service {
     private TessBaseAPI mTessApi;
 
     private boolean mIsInitialized = false;
+    private boolean mAllowHistory = false;
 
     // Overlay Views
     private RelativeLayout mLoadingOverlayLayout;
@@ -142,6 +147,7 @@ public class OverlayControlService extends Service {
 
     private void processStart(Intent intent) {
         if (!mIsInitialized) {
+            mAllowHistory = false;
             DataUtils.copyDataIfRequired(this);
 
             mScreenshotObserver = new RecursiveFileObserver(Environment
@@ -167,18 +173,26 @@ public class OverlayControlService extends Service {
             // Process new intent data
 
             boolean turnOff = intent.getBooleanExtra(EXTRA_TURN_OFF, false);
+            boolean loadLast = intent.getBooleanExtra(EXTRA_LOAD_LAST, false);
 
             if (turnOff) {
                 Log.e(TAG, "Turning off...");
                 clearLoadingIndicator();
                 stopForeground(true);
                 stopSelf();
+
+            } else if (loadLast) {
+                Log.e(TAG, "Rescanning last screenshot...");
+                mAllowHistory = true;
+                mNotificationManager.notify(NOTIFICATION_ID, getControllerNotification(true));
+                new OcrAsyncTask().execute(Utils.getData(CONTEXT, STORE_LAST_SCREENSHOT));
             }
         }
     }
 
     private void respondToScreenshot(String path) {
         mNotificationManager.notify(NOTIFICATION_ID, getControllerNotification(true));
+        Utils.setData(this, STORE_LAST_SCREENSHOT, path);
         new OcrAsyncTask().execute(path);
     }
 
@@ -248,7 +262,8 @@ public class OverlayControlService extends Service {
         if (data == null || data.trim().length() == 0) return;
 
         Intent viewerIntent = new Intent(CONTEXT, ImageViewerActivity.class);
-        viewerIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        int flags = Intent.FLAG_ACTIVITY_NEW_TASK | (mAllowHistory ? 0 : Intent.FLAG_ACTIVITY_NO_HISTORY);
+        viewerIntent.setFlags(flags);
         startActivity(viewerIntent);
 
         /**final WindowManager windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
@@ -425,6 +440,7 @@ public class OverlayControlService extends Service {
 
         @Override
         protected void onPostExecute(List<DataUtils.VerseReference> result) {
+            mNotificationManager.notify(NOTIFICATION_ID, getControllerNotification(false));
             clearLoadingIndicator();
 
             String test = "";
