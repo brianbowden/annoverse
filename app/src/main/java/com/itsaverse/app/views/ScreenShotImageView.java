@@ -3,8 +3,6 @@ package com.itsaverse.app.views;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -13,7 +11,6 @@ import android.util.AttributeSet;
 import android.widget.ImageView;
 
 import com.googlecode.leptonica.android.Box;
-import com.itsaverse.app.utils.DimHelper;
 
 import java.util.List;
 
@@ -21,7 +18,8 @@ public class ScreenShotImageView extends ImageView {
 
     private int mVerticalOffset = 0;
     private int mDheight = 0;
-    private List<Box> mClipBoxes;
+    private List<ClickableBox> mClickableBoxes;
+    private ClickableRectView mClickOverlay;
 
     public ScreenShotImageView(Context context) {
         super(context);
@@ -57,17 +55,24 @@ public class ScreenShotImageView extends ImageView {
         }
         canvas.translate(0, existingOffset + mVerticalOffset);
 
-        if (mClipBoxes != null) {
+        if (mClickableBoxes != null) {
             Path clipPath = new Path();
 
-            for (Box box : mClipBoxes) {
-
+            for (ClickableBox clickableBox : mClickableBoxes) {
+                Box box = clickableBox.getBox();
                 int roundedEdge = Math.round(0.3f * box.getHeight());
                 int vertFix = Math.round(0.1f * box.getHeight()); // inexplicable
                 RectF rect = new RectF(box.getX(), box.getY() - box.getHeight() - roundedEdge - vertFix + mVerticalOffset,
                         box.getX() + box.getWidth(), box.getY() + roundedEdge - vertFix + mVerticalOffset);
 
                 clipPath.addRoundRect(rect, roundedEdge, roundedEdge, Path.Direction.CW);
+
+                if (mClickOverlay != null) {
+                    rect.top = rect.top + existingOffset + mVerticalOffset;
+                    rect.bottom = rect.bottom + existingOffset + mVerticalOffset;
+                    mClickOverlay.addClickableRect(new ClickableRectView.ClickableRect(rect,
+                            roundedEdge, clickableBox.getClickListener()));
+                }
             }
 
             canvas.drawARGB(0, 0, 0, 0);
@@ -77,7 +82,30 @@ public class ScreenShotImageView extends ImageView {
         super.onDraw(canvas);
     }
 
-    public void setClipBoxes(List<Box> boxes) {
-        mClipBoxes = boxes;
+    public void setClickableBoxes(List<ClickableBox> boxes) {
+        mClickableBoxes = boxes;
+    }
+
+    public void linkClickOverlay(ClickableRectView clickOverlay) {
+        mClickOverlay = clickOverlay;
+    }
+
+    public static class ClickableBox {
+
+        private Box mBox;
+        private OnClickListener mClickListener;
+
+        public ClickableBox(Box box, OnClickListener clickListener) {
+            mBox = box;
+            mClickListener = clickListener;
+        }
+
+        public Box getBox() {
+            return mBox;
+        }
+
+        public OnClickListener getClickListener() {
+            return mClickListener;
+        }
     }
 }

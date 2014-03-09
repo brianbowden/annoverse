@@ -2,6 +2,7 @@ package com.itsaverse.app.utils;
 
 import android.content.Context;
 import android.content.res.AssetManager;
+import android.graphics.Rect;
 import android.os.Environment;
 import android.util.Log;
 
@@ -81,6 +82,11 @@ public class DataUtils {
         }
 
         return refs;
+    }
+
+    public static Rect convertBoxToRect(Box box) {
+        if (box == null) return null;
+        return new Rect(box.getX(), box.getY() + box.getHeight(), box.getX() + box.getWidth(), box.getY());
     }
 
     private static List<Integer> getAllWordPositions(String utf8text) {

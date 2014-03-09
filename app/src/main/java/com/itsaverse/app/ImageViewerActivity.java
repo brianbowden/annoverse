@@ -1,21 +1,27 @@
 package com.itsaverse.app;
 
 import android.app.Activity;
+import android.content.Context;
 import android.os.Bundle;
+import android.view.View;
 import android.view.Window;
 import android.widget.Toast;
 
 import com.googlecode.leptonica.android.Box;
 import com.itsaverse.app.utils.DataUtils;
+import com.itsaverse.app.views.ClickableRectView;
 import com.itsaverse.app.views.ScreenShotImageView;
+import com.itsaverse.app.views.ScreenShotImageView.ClickableBox;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class ImageViewerActivity extends Activity {
 
+    private final Context CONTEXT = this;
     private ScreenShotImageView mBaseImage;
     private ScreenShotImageView mOverlayImage;
+    private ClickableRectView mClickableOverlay;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -25,6 +31,17 @@ public class ImageViewerActivity extends Activity {
 
         mBaseImage = (ScreenShotImageView) findViewById(R.id.image_viewer_image);
         mOverlayImage = (ScreenShotImageView) findViewById(R.id.image_viewer_overlay_image);
+        mClickableOverlay = (ClickableRectView) findViewById(R.id.image_viewer_click_overlay);
+
+        mClickableOverlay.setOnDoubleClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                finish();
+                overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+            }
+        });
+
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
     }
 
     @Override
@@ -35,14 +52,25 @@ public class ImageViewerActivity extends Activity {
             mBaseImage.setImageBitmap(OverlayControlService.getScreenshot());
             mOverlayImage.setImageBitmap(OverlayControlService.getScreenshot());
 
-            List<Box> boxes = new ArrayList<Box>();
-            for (DataUtils.VerseReference ref : OverlayControlService.getVerseReferences()) {
+            List<ClickableBox> clickableBoxes = new ArrayList<ClickableBox>();
+            for (final DataUtils.VerseReference ref : OverlayControlService.getVerseReferences()) {
                 if (ref.posBoxes != null) {
-                    boxes.addAll(ref.posBoxes);
+
+                    View.OnClickListener verseClickListener = new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            Toast.makeText(CONTEXT, ref.text, Toast.LENGTH_LONG).show();
+                        }
+                    };
+
+                    for (Box box : ref.posBoxes) {
+                        clickableBoxes.add(new ClickableBox(box, verseClickListener));
+                    }
                 }
             }
 
-            mOverlayImage.setClipBoxes(boxes);
+            mOverlayImage.linkClickOverlay(mClickableOverlay);
+            mOverlayImage.setClickableBoxes(clickableBoxes);
 
         } else {
             Toast.makeText(this, "No screenshot to display!", Toast.LENGTH_LONG);
