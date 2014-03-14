@@ -61,7 +61,7 @@ public class DataUtils {
 
     public static List<VerseReference> getVerseReferences(String utf8Text, Pixa words) {
 
-        utf8Text = utf8Text.replace("–", "-").replace("—", "-");
+        utf8Text = utf8Text.replace("–", "-").replace("—", "-").toLowerCase();
 
         List<VerseReference> refs = new ArrayList<VerseReference>();
         List<Integer> wordPositions = getAllWordPositions(utf8Text);
@@ -80,6 +80,8 @@ public class DataUtils {
                 refs.add(ref);
             }
         }
+
+        Log.e(TAG, utf8Text);
 
         return refs;
     }
@@ -214,7 +216,8 @@ public class DataUtils {
 
     public static class VerseReference {
 
-        public static final String REGEX = "(\\d|[iI]{1,3}+(\\s))?(\\w++|(song of \\w++))(\\s)([\\d\\s,;:\\-and\\&]*\\d)";
+        public static final String REGEX = "([iI123]{1,3}(\\s))?(\\w++|(song of \\w++))(\\s)([\\d\\s," +
+                ";:\\-and\\&]*\\d)(?!( (sam|king|chron|cor|thes|tim|pet|john)))";
 
         public static final List<String> BOOK_VARIATIONS = Arrays.asList(
                 "amos",
