@@ -20,6 +20,7 @@ public class ClickableRectView extends View {
 
     private List<ClickableRect> mClickableRects;
     private OnClickListener mDoubleClickListener;
+    private OnClickListener mOuterClickListener;
     private int mClickedRectIndex = -1;
     private Paint mOverlayPaint;
     private long lastOuterTap = -1;
@@ -72,6 +73,10 @@ public class ClickableRectView extends View {
                 }
             }
 
+            if (mOuterClickListener != null) {
+                mOuterClickListener.onClick(this);
+            }
+
             long currTime = new Date().getTime();
             if (lastOuterTap != -1 && currTime - lastOuterTap < DOUBLE_TAP_DURATION
                     && mDoubleClickListener != null) {
@@ -114,6 +119,10 @@ public class ClickableRectView extends View {
 
     public void setOnDoubleClickListener(OnClickListener doubleClickListener) {
         mDoubleClickListener = doubleClickListener;
+    }
+
+    public void setOnOuterClickListener(OnClickListener outerClickListener) {
+        mOuterClickListener = outerClickListener;
     }
 
     public static class ClickableRect {

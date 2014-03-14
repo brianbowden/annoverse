@@ -23,7 +23,7 @@ public class VerseFetcher {
 
     public VerseFetcher() {}
 
-    public static void requestEsvPassage(String ip, String passage, Callback<String> callback) {
+    public static void requestEsvPassage(String passage, Callback<String> callback) {
         Converter basicConverter = new Converter() {
             @Override
             public String fromBody(TypedInput typedInput, Type type) throws ConversionException {
@@ -68,13 +68,13 @@ public class VerseFetcher {
                 .build();
 
         EsvService service = restAdapter.create(EsvService.class);
-        service.passageHtml(ip, passage, callback);
+        service.passageHtml("IP", passage, callback);
     }
 
     public interface EsvService {
         @GET("/passageQuery")
         void passageHtml(
-                @Query("key") String ip,
+                @Query("key") String key,
                 @Query("passage") String passage,
                 Callback<String> cb);
     }

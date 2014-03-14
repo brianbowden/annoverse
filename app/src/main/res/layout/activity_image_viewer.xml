@@ -27,4 +27,41 @@
         android:layout_height="match_parent"
         android:background="@android:color/transparent"/>
 
+    <RelativeLayout
+        android:id="@+id/image_viewer_passage_layout"
+        android:layout_width="match_parent"
+        android:layout_height="270dp"
+        android:layout_alignParentBottom="true"
+        android:orientation="vertical"
+        android:visibility="invisible">
+
+        <View
+            android:id="@+id/image_viewer_passage_shadow"
+            android:layout_width="match_parent"
+            android:layout_height="30dp"
+            android:background="@drawable/passage_shadow_gradient" />
+
+        <WebView
+            android:id="@+id/image_viewer_passage_webview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_below="@id/image_viewer_passage_shadow"
+            android:background="#e0e0e0"/>
+
+        <ProgressBar
+            android:id="@+id/image_viewer_passage_loading_indicator"
+            android:layout_width="25dp"
+            android:layout_height="25dp"
+            android:layout_marginTop="5dp"
+            android:layout_marginRight="5dp"
+            android:layout_below="@id/image_viewer_passage_shadow"
+            android:layout_alignParentRight="true"
+            android:indeterminateOnly="true"
+            android:indeterminateDrawable="@anim/continuous_rotation_loader"
+            android:indeterminateDuration="500"
+            android:indeterminateBehavior="repeat"
+            android:visibility="invisible"/>
+
+    </RelativeLayout>
+
 </RelativeLayout>

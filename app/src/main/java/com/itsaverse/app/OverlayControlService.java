@@ -26,7 +26,6 @@ import android.view.View;
 import android.view.WindowManager;
 import android.view.animation.AnimationUtils;
 import android.widget.RelativeLayout;
-import android.widget.Toast;
 
 import com.googlecode.leptonica.android.Pixa;
 import com.googlecode.tesseract.android.TessBaseAPI;
@@ -35,14 +34,7 @@ import com.itsaverse.app.utils.DataUtils;
 import com.itsaverse.app.utils.RecursiveFileObserver;
 import com.itsaverse.app.utils.Utils;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.util.List;
-
-import retrofit.Callback;
-import retrofit.RetrofitError;
-import retrofit.client.Response;
 
 public class OverlayControlService extends Service {
 
@@ -255,126 +247,11 @@ public class OverlayControlService extends Service {
         }
     }
 
-    private void displayOverlay(String data) {
-        if (data == null || data.trim().length() == 0) return;
-
+    private void startOverlayActivity() {
         Intent viewerIntent = new Intent(CONTEXT, ImageViewerActivity.class);
         int flags = Intent.FLAG_ACTIVITY_NEW_TASK | (mAllowHistory ? 0 : Intent.FLAG_ACTIVITY_NO_HISTORY);
         viewerIntent.setFlags(flags);
         startActivity(viewerIntent);
-
-        /**final WindowManager windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        windowManager.getDefaultDisplay().getMetrics(displayMetrics);
-
-        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
-                WindowManager.LayoutParams.TYPE_SYSTEM_ALERT,
-                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
-                PixelFormat.TRANSLUCENT);
-
-        lp.height = displayMetrics.heightPixels;
-        lp.width = displayMetrics.widthPixels;
-
-        final RelativeLayout screenLayout = new RelativeLayout(CONTEXT);
-
-        final RelativeLayout overlayLayout = new RelativeLayout(CONTEXT);
-        overlayLayout.setBackgroundColor(Color.parseColor("#AA000000"));
-        screenLayout.addView(overlayLayout);
-        RelativeLayout.LayoutParams overlayLp = (RelativeLayout.LayoutParams) overlayLayout.getLayoutParams();
-        overlayLp.height = ViewGroup.LayoutParams.MATCH_PARENT;
-        overlayLp.width = ViewGroup.LayoutParams.MATCH_PARENT;
-
-        WebView scriptureWebView = new WebView(CONTEXT);
-        overlayLayout.addView(scriptureWebView);
-        RelativeLayout.LayoutParams scriptureLp = (RelativeLayout.LayoutParams) scriptureWebView.getLayoutParams();
-        scriptureLp.height = ActionBar.LayoutParams.MATCH_PARENT;
-        scriptureLp.width = ActionBar.LayoutParams.MATCH_PARENT;
-        scriptureLp.setMargins(50, 200, 50, 200);
-
-        scriptureWebView.loadData("<font color=\"#ffffff\">" + data + "</font>", "text/html", "utf8");
-        scriptureWebView.setBackgroundColor(getResources().getColor(android.R.color.transparent));
-
-        overlayLayout.setVisibility(View.INVISIBLE);
-
-        windowManager.addView(screenLayout, lp);
-
-        final AlphaAnimation alphaInAnim = new AlphaAnimation(0.0f, 1.0f);
-        alphaInAnim.setDuration(400);
-        alphaInAnim.setInterpolator(new DecelerateInterpolator());
-        alphaInAnim.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {
-
-            }
-
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                overlayLayout.setVisibility(View.VISIBLE);
-            }
-
-            @Override
-            public void onAnimationRepeat(Animation animation) {
-
-            }
-        });
-
-        overlayLayout.startAnimation(alphaInAnim);
-
-        final AlphaAnimation alphaOutAnim = new AlphaAnimation(1.0f, 0.0f);
-        alphaOutAnim.setDuration(400);
-        alphaOutAnim.setInterpolator(new DecelerateInterpolator());
-        alphaOutAnim.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {
-
-            }
-
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                windowManager.removeView(screenLayout);
-            }
-
-            @Override
-            public void onAnimationRepeat(Animation animation) {
-
-            }
-        });
-
-        screenLayout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                overlayLayout.startAnimation(alphaOutAnim);
-            }
-        }); **/
-    }
-
-    private void requestPassage(String unencodedPassage) {
-        String passage = null;
-
-        try {
-            passage = URLEncoder.encode(unencodedPassage, Charset.defaultCharset().name());
-
-        } catch (UnsupportedEncodingException e) {
-            Log.e(TAG, "Error encoding the passage: " + e != null ? e.getMessage() : "");
-            return;
-        }
-
-        Callback<String> callback = new Callback<String>() {
-            @Override
-            public void success(String passageText, Response response) {
-                displayOverlay(passageText);
-                mNotificationManager.notify(NOTIFICATION_ID, getControllerNotification(false));
-            }
-
-            @Override
-            public void failure(RetrofitError retrofitError) {
-                Toast.makeText(CONTEXT, "Unable to look up passage!", Toast.LENGTH_LONG);
-                Log.e(TAG, "Unable to look up passage: " + retrofitError != null ? retrofitError.getMessage() : "");
-            }
-        };
-
-        VerseFetcher.requestEsvPassage("IP", passage, callback);
     }
 
     private class OcrAsyncTask extends AsyncTask<String, Void, List<DataUtils.VerseReference>> {
@@ -445,12 +322,14 @@ public class OverlayControlService extends Service {
             String test = "";
 
             for (DataUtils.VerseReference ref : result) {
-                test += ref.text + "<br/>";
+                test += ref.text + "\\n";
             }
 
             Log.e(TAG, "Results: " + test);
 
-            displayOverlay(test);
+            if (result != null && result.size() > 0) {
+                startOverlayActivity();
+            }
         }
     }
 
