@@ -202,7 +202,7 @@ public class OverlayControlService extends Service {
                 : getString(R.string.ongoing_notification_desc);
 
         Notification.Builder builder = new Notification.Builder(this)
-                .setSmallIcon(R.drawable.loading_icon)
+                .setSmallIcon(R.drawable.itsaverse_notif_icon)
                 .setContentTitle(getString(R.string.ongoing_notification_title))
                 .setContentText(contentText)
                 .setOngoing(true);

@@ -11,7 +11,7 @@
     <application
         android:name=".ItsaverseApplication"
         android:allowBackup="true"
-        android:icon="@drawable/loading_icon"
+        android:icon="@drawable/itsaverse_icon"
         android:label="@string/app_name">
         <activity
             android:name="com.itsaverse.app.SettingsActivity"
