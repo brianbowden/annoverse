@@ -8,29 +8,38 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
+import android.util.Log;
+import android.view.ViewConfiguration;
 import android.widget.ImageView;
 
 import com.googlecode.leptonica.android.Box;
+import com.itsaverse.app.utils.DimHelper;
 
 import java.util.List;
 
 public class ScreenShotImageView extends ImageView {
 
+    private final String TAG = "ScreenShotImageView";
+
     private int mVerticalOffset = 0;
     private int mDheight = 0;
+    private boolean hasVirtualButtons;
     private List<ClickableBox> mClickableBoxes;
     private ClickableRectView mClickOverlay;
 
     public ScreenShotImageView(Context context) {
         super(context);
+        init();
     }
 
     public ScreenShotImageView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        init();
     }
 
     public ScreenShotImageView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+        init();
     }
 
     @Override
@@ -48,11 +57,8 @@ public class ScreenShotImageView extends ImageView {
         int vHeight = this.getMeasuredHeight();
         int existingOffset = Math.round((mDheight - vHeight) / 2.0f);
 
-        Resources resources = getContext().getResources();
-        int statusBarId = resources.getIdentifier("status_bar_height", "dimen", "android");
-        if (statusBarId > 0) {
-            mVerticalOffset = -resources.getDimensionPixelSize(statusBarId);
-        }
+        mVerticalOffset = hasVirtualButtons ? -(DimHelper.get().getScreenHeightPixels() - vHeight) : 0;
+
         canvas.translate(0, existingOffset + mVerticalOffset);
 
         if (mClickableBoxes != null) {
@@ -66,6 +72,10 @@ public class ScreenShotImageView extends ImageView {
                         box.getX() + box.getWidth(), box.getY() + roundedEdge - vertFix + mVerticalOffset);
 
                 clipPath.addRoundRect(rect, roundedEdge, roundedEdge, Path.Direction.CW);
+
+                Log.e(TAG, "1-- Left: " + rect.left + " Top: " + rect.top +
+                        " Right: " + rect.right + " Bottom: " + rect.bottom);
+
 
                 if (mClickOverlay != null) {
                     rect.top = rect.top + existingOffset + mVerticalOffset;
@@ -88,6 +98,11 @@ public class ScreenShotImageView extends ImageView {
 
     public void linkClickOverlay(ClickableRectView clickOverlay) {
         mClickOverlay = clickOverlay;
+    }
+
+    private void init() {
+        setLayerType(LAYER_TYPE_SOFTWARE, null);
+        hasVirtualButtons = !ViewConfiguration.get(getContext()).hasPermanentMenuKey();
     }
 
     public static class ClickableBox {
