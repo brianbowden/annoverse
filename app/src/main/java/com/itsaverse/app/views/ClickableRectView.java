@@ -7,8 +7,11 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.util.AttributeSet;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+
+import com.itsaverse.app.OverlayControlService;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -18,6 +21,7 @@ public class ClickableRectView extends View {
 
     private static final int DOUBLE_TAP_DURATION = 500;
 
+    private Context mContext;
     private List<ClickableRect> mClickableRects;
     private OnClickListener mDoubleClickListener;
     private OnClickListener mOuterClickListener;
@@ -27,20 +31,21 @@ public class ClickableRectView extends View {
 
     public ClickableRectView(Context context) {
         super(context);
-        init();
+        init(context);
     }
 
     public ClickableRectView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        init();
+        init(context);
     }
 
     public ClickableRectView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        init();
+        init(context);
     }
 
-    private void init() {
+    private void init(Context context) {
+        mContext = context;
         mOverlayPaint = new Paint();
         mOverlayPaint.setStyle(Paint.Style.FILL);
         mOverlayPaint.setColor(Color.argb(64, 0, 0, 0));

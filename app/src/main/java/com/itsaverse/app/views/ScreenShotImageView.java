@@ -9,10 +9,12 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.ViewConfiguration;
 import android.widget.ImageView;
 
 import com.googlecode.leptonica.android.Box;
+import com.itsaverse.app.OverlayControlService;
 import com.itsaverse.app.utils.DimHelper;
 
 import java.util.List;
@@ -21,6 +23,7 @@ public class ScreenShotImageView extends ImageView {
 
     private final String TAG = "ScreenShotImageView";
 
+    private Context mContext;
     private int mVerticalOffset = 0;
     private int mDheight = 0;
     private boolean hasVirtualButtons;
@@ -29,17 +32,17 @@ public class ScreenShotImageView extends ImageView {
 
     public ScreenShotImageView(Context context) {
         super(context);
-        init();
+        init(context);
     }
 
     public ScreenShotImageView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        init();
+        init(context);
     }
 
     public ScreenShotImageView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-        init();
+        init(context);
     }
 
     @Override
@@ -100,7 +103,8 @@ public class ScreenShotImageView extends ImageView {
         mClickOverlay = clickOverlay;
     }
 
-    private void init() {
+    private void init(Context context) {
+        mContext = context;
         setLayerType(LAYER_TYPE_SOFTWARE, null);
         hasVirtualButtons = !ViewConfiguration.get(getContext()).hasPermanentMenuKey();
     }

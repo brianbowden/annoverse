@@ -69,6 +69,8 @@ public class OverlayControlService extends Service {
     private RecursiveFileObserver mScreenshotObserver;
     private TessBaseAPI mTessApi;
 
+    private ScreenshotOverlayManager mScreenshotOverlayManager;
+
     private boolean mIsInitialized = false;
     private boolean mAllowHistory = false;
 
@@ -81,6 +83,7 @@ public class OverlayControlService extends Service {
         mHandler = new Handler(Looper.getMainLooper());
 
         mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        mScreenshotOverlayManager = new ScreenshotOverlayManager(this);
 
         // Offload the Tess initialization into a non-UI thread. This is potentially hazardous, but it should be ok.
         new Thread(new Runnable() {
@@ -132,6 +135,19 @@ public class OverlayControlService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         return mBinder;
+    }
+
+    public void startScreenshotOverlay() {
+        /**Intent viewerIntent = new Intent(CONTEXT, ImageViewerActivity.class);
+         int flags = Intent.FLAG_ACTIVITY_NEW_TASK | (mAllowHistory ? 0 : Intent.FLAG_ACTIVITY_NO_HISTORY);
+         viewerIntent.setFlags(flags);
+         startActivity(viewerIntent);**/
+
+        mScreenshotOverlayManager.displayScreenshotOverlay();
+    }
+
+    public void stopScreenshotOverlay() {
+        mScreenshotOverlayManager.hideScreenshotOverlay();
     }
 
     private void processStart(Intent intent) {
@@ -247,13 +263,6 @@ public class OverlayControlService extends Service {
         }
     }
 
-    private void startOverlayActivity() {
-        Intent viewerIntent = new Intent(CONTEXT, ImageViewerActivity.class);
-        int flags = Intent.FLAG_ACTIVITY_NEW_TASK | (mAllowHistory ? 0 : Intent.FLAG_ACTIVITY_NO_HISTORY);
-        viewerIntent.setFlags(flags);
-        startActivity(viewerIntent);
-    }
-
     private class OcrAsyncTask extends AsyncTask<String, Void, List<DataUtils.VerseReference>> {
 
         @Override
@@ -328,7 +337,7 @@ public class OverlayControlService extends Service {
             Log.e(TAG, "Results: " + test);
 
             if (result != null && result.size() > 0) {
-                startOverlayActivity();
+                startScreenshotOverlay();
             }
         }
     }
