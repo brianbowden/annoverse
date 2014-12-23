@@ -1,6 +1,9 @@
 <component name="libraryTable">
   <library name="tess-two-0.0.1-SNAPSHOT">
-    <CLASSES />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/app/build/intermediates/exploded-aar/tess-two/tess-two/0.0.1-SNAPSHOT/classes.jar!/" />
+      <root url="file://$PROJECT_DIR$/app/build/intermediates/exploded-aar/tess-two/tess-two/0.0.1-SNAPSHOT/res" />
+    </CLASSES>
     <JAVADOC />
     <SOURCES />
   </library>

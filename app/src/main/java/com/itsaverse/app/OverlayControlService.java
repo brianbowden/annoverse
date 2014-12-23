@@ -90,6 +90,7 @@ public class OverlayControlService extends Service {
             @Override
             public void run() {
                 try {
+                    DataUtils.copyDataIfRequired(CONTEXT);
                     mTessApi = new TessBaseAPI();
                     mTessApi.init(Environment.getExternalStorageDirectory().getAbsolutePath(), "eng");
                 } catch (Exception e) {
@@ -138,12 +139,12 @@ public class OverlayControlService extends Service {
     }
 
     public void startScreenshotOverlay() {
-        /**Intent viewerIntent = new Intent(CONTEXT, ImageViewerActivity.class);
-         int flags = Intent.FLAG_ACTIVITY_NEW_TASK | (mAllowHistory ? 0 : Intent.FLAG_ACTIVITY_NO_HISTORY);
-         viewerIntent.setFlags(flags);
-         startActivity(viewerIntent);**/
+        Intent viewerIntent = new Intent(CONTEXT, ImageViewerActivity.class);
+        int flags = Intent.FLAG_ACTIVITY_NEW_TASK | (mAllowHistory ? 0 : Intent.FLAG_ACTIVITY_NO_HISTORY);
+        viewerIntent.setFlags(flags);
+        startActivity(viewerIntent);
 
-        mScreenshotOverlayManager.displayScreenshotOverlay();
+        //mScreenshotOverlayManager.displayScreenshotOverlay();
     }
 
     public void stopScreenshotOverlay() {

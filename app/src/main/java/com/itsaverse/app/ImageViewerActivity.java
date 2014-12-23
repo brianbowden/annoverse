@@ -80,6 +80,7 @@ public class ImageViewerActivity extends Activity {
 
     @Override
     public void onResume() {
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
         super.onResume();
 
         if (OverlayControlService.getScreenshot() != null) {
@@ -110,8 +111,6 @@ public class ImageViewerActivity extends Activity {
         } else {
             Toast.makeText(this, "No screenshot to display!", Toast.LENGTH_LONG);
         }
-
-        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
     }
 
     @Override

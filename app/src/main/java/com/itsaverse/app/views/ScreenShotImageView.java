@@ -3,6 +3,8 @@ package com.itsaverse.app.views;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -29,6 +31,8 @@ public class ScreenShotImageView extends ImageView {
     private boolean hasVirtualButtons;
     private List<ClickableBox> mClickableBoxes;
     private ClickableRectView mClickOverlay;
+
+    private Paint mTransparentPaint;
 
     public ScreenShotImageView(Context context) {
         super(context);
@@ -88,7 +92,8 @@ public class ScreenShotImageView extends ImageView {
                 }
             }
 
-            canvas.drawARGB(0, 0, 0, 0);
+            //canvas.drawARGB(0, 0, 0, 0);
+            canvas.drawRect(0, 0, getWidth(), getHeight(), mTransparentPaint);
             canvas.clipPath(clipPath);
         }
 
@@ -107,6 +112,10 @@ public class ScreenShotImageView extends ImageView {
         mContext = context;
         setLayerType(LAYER_TYPE_SOFTWARE, null);
         hasVirtualButtons = !ViewConfiguration.get(getContext()).hasPermanentMenuKey();
+
+        mTransparentPaint = new Paint();
+        mTransparentPaint.setColor(Color.TRANSPARENT);
+        mTransparentPaint.setStyle(Paint.Style.FILL);
     }
 
     public static class ClickableBox {
