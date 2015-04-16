@@ -9,7 +9,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="200dp"
+        android:layout_marginTop="50dp"
         android:paddingLeft="16dp"
         android:paddingRight="16dp"
         android:fontFamily="sans-serif-light"
@@ -42,5 +42,25 @@
         android:fontFamily="sans-serif-light"
         android:text="Load Last"
         android:background="@drawable/selector_grey"/>
+
+    <Button
+        android:id="@+id/settings_capture_screen_button"
+        android:layout_width="100dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="20dp"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@id/settings_load_last_button"
+        android:textColor="#f0f0f0"
+        android:textSize="15dp"
+        android:fontFamily="sans-serif-light"
+        android:text="Capture Screen"
+        android:background="@drawable/selector_grey"/>
+
+    <SurfaceView
+        android:id="@+id/settings_screen_capture_surface"
+        android:layout_width="match_parent"
+        android:layout_height="400dp"
+        android:layout_below="@id/settings_capture_screen_button"
+        android:layout_centerHorizontal="true"/>
 
 </RelativeLayout>

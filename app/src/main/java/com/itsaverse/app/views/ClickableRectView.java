@@ -55,6 +55,8 @@ public class ClickableRectView extends View {
     public void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
+        canvas.drawARGB(0, 0, 0, 0);
+
         if (mClickedRectIndex > -1 && mClickableRects != null && mClickableRects.size() > mClickedRectIndex) {
             ClickableRect cRect = mClickableRects.get(mClickedRectIndex);
 

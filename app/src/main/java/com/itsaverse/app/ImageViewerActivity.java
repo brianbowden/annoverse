@@ -10,7 +10,6 @@ import android.view.animation.Animation;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.TranslateAnimation;
 import android.webkit.WebView;
-import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
@@ -19,12 +18,9 @@ import com.googlecode.leptonica.android.Box;
 import com.itsaverse.app.utils.DataUtils;
 import com.itsaverse.app.utils.Utils;
 import com.itsaverse.app.views.ClickableRectView;
-import com.itsaverse.app.views.ScreenShotImageView;
-import com.itsaverse.app.views.ScreenShotImageView.ClickableBox;
+import com.itsaverse.app.views.ScreenShotHighlightView;
+import com.itsaverse.app.views.ScreenShotHighlightView.ClickableBox;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,8 +33,8 @@ public class ImageViewerActivity extends Activity {
     private static final String TAG = "ImageViewActivity";
 
     private final Context CONTEXT = this;
-    private ScreenShotImageView mBaseImage;
-    private ScreenShotImageView mOverlayImage;
+    private ScreenShotHighlightView mBaseImage;
+    private ScreenShotHighlightView mOverlayImage;
     private ClickableRectView mClickableOverlay;
     private RelativeLayout mPassageLayout;
     private WebView mPassageWebview;
@@ -53,8 +49,8 @@ public class ImageViewerActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_image_viewer);
 
-        mBaseImage = (ScreenShotImageView) findViewById(R.id.image_viewer_image);
-        mOverlayImage = (ScreenShotImageView) findViewById(R.id.image_viewer_overlay_image);
+        mBaseImage = (ScreenShotHighlightView) findViewById(R.id.image_viewer_image);
+        mOverlayImage = (ScreenShotHighlightView) findViewById(R.id.image_viewer_overlay_image);
         mClickableOverlay = (ClickableRectView) findViewById(R.id.image_viewer_click_overlay);
         mPassageLayout = (RelativeLayout) findViewById(R.id.image_viewer_passage_layout);
         mPassageWebview = (WebView) findViewById(R.id.image_viewer_passage_webview);

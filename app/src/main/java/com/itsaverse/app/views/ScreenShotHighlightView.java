@@ -8,6 +8,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Region;
 import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -21,7 +22,7 @@ import com.itsaverse.app.utils.DimHelper;
 
 import java.util.List;
 
-public class ScreenShotImageView extends ImageView {
+public class ScreenShotHighlightView extends ImageView {
 
     private final String TAG = "ScreenShotImageView";
 
@@ -34,17 +35,17 @@ public class ScreenShotImageView extends ImageView {
 
     private Paint mTransparentPaint;
 
-    public ScreenShotImageView(Context context) {
+    public ScreenShotHighlightView(Context context) {
         super(context);
         init(context);
     }
 
-    public ScreenShotImageView(Context context, AttributeSet attrs) {
+    public ScreenShotHighlightView(Context context, AttributeSet attrs) {
         super(context, attrs);
         init(context);
     }
 
-    public ScreenShotImageView(Context context, AttributeSet attrs, int defStyle) {
+    public ScreenShotHighlightView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
         init(context);
     }
@@ -53,6 +54,8 @@ public class ScreenShotImageView extends ImageView {
     public void setImageDrawable(Drawable drawable) {
         super.setImageDrawable(drawable);
         mDheight = drawable.getIntrinsicHeight();
+
+        setBackgroundColor(Color.TRANSPARENT);
     }
 
     @Override
@@ -92,9 +95,9 @@ public class ScreenShotImageView extends ImageView {
                 }
             }
 
-            //canvas.drawARGB(0, 0, 0, 0);
-            canvas.drawRect(0, 0, getWidth(), getHeight(), mTransparentPaint);
-            canvas.clipPath(clipPath);
+            canvas.drawPaint(mTransparentPaint);
+            //canvas.drawRect(0, 0, getWidth(), getHeight(), mTransparentPaint);
+            canvas.clipPath(clipPath, Region.Op.INTERSECT);
         }
 
         super.onDraw(canvas);

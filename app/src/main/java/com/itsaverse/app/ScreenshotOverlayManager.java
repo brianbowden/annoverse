@@ -21,7 +21,7 @@ import com.itsaverse.app.utils.DataUtils;
 import com.itsaverse.app.utils.Utils;
 import com.itsaverse.app.views.ClickableRectView;
 import com.itsaverse.app.views.DispatchRelativeLayout;
-import com.itsaverse.app.views.ScreenShotImageView;
+import com.itsaverse.app.views.ScreenShotHighlightView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,8 +36,8 @@ public class ScreenshotOverlayManager {
 
     private Context mContext;
     private DispatchRelativeLayout mScreenshotLayout;
-    private ScreenShotImageView mBaseImage;
-    private ScreenShotImageView mOverlayImage;
+    private ScreenShotHighlightView mBaseImage;
+    private ScreenShotHighlightView mOverlayImage;
     private ClickableRectView mClickableOverlay;
     private RelativeLayout mPassageLayout;
     private WebView mPassageWebview;
@@ -77,8 +77,8 @@ public class ScreenshotOverlayManager {
         lp.width = displayMetrics.widthPixels;
 
         mScreenshotLayout = (DispatchRelativeLayout) LayoutInflater.from(mContext).inflate(R.layout.activity_image_viewer, null);
-        mBaseImage = (ScreenShotImageView) mScreenshotLayout.findViewById(R.id.image_viewer_image);
-        mOverlayImage = (ScreenShotImageView) mScreenshotLayout.findViewById(R.id.image_viewer_overlay_image);
+        mBaseImage = (ScreenShotHighlightView) mScreenshotLayout.findViewById(R.id.image_viewer_image);
+        mOverlayImage = (ScreenShotHighlightView) mScreenshotLayout.findViewById(R.id.image_viewer_overlay_image);
         mClickableOverlay = (ClickableRectView) mScreenshotLayout.findViewById(R.id.image_viewer_click_overlay);
         mPassageLayout = (RelativeLayout) mScreenshotLayout.findViewById(R.id.image_viewer_passage_layout);
         mPassageWebview = (WebView) mScreenshotLayout.findViewById(R.id.image_viewer_passage_webview);
@@ -121,7 +121,7 @@ public class ScreenshotOverlayManager {
             mBaseImage.setImageBitmap(OverlayControlService.getScreenshot());
             mOverlayImage.setImageBitmap(OverlayControlService.getScreenshot());
 
-            List<ScreenShotImageView.ClickableBox> clickableBoxes = new ArrayList<ScreenShotImageView.ClickableBox>();
+            List<ScreenShotHighlightView.ClickableBox> clickableBoxes = new ArrayList<ScreenShotHighlightView.ClickableBox>();
             for (final DataUtils.VerseReference ref : OverlayControlService.getVerseReferences()) {
                 if (ref.posBoxes != null) {
 
@@ -134,7 +134,7 @@ public class ScreenshotOverlayManager {
                     };
 
                     for (Box box : ref.posBoxes) {
-                        clickableBoxes.add(new ScreenShotImageView.ClickableBox(box, verseClickListener));
+                        clickableBoxes.add(new ScreenShotHighlightView.ClickableBox(box, verseClickListener));
                     }
                 }
             }

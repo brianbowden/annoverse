@@ -6,14 +6,22 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.hardware.display.DisplayManager;
+import android.hardware.display.VirtualDisplay;
+import android.media.projection.MediaProjection;
+import android.media.projection.MediaProjectionManager;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.Surface;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.Button;
+import android.widget.Toast;
 
 public class SettingsActivity extends Activity {
 
@@ -37,6 +45,13 @@ public class SettingsActivity extends Activity {
         startService(serviceIntent);
     }
 
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (mSettingsFragment != null && mSettingsFragment.isResumed() && mSettingsFragment.isVisible()) {
+            mSettingsFragment.onActivityResult(requestCode, resultCode, data);
+        }
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -60,9 +75,24 @@ public class SettingsActivity extends Activity {
 
     public static class SettingsFragment extends Fragment {
 
+        private static final int REQUEST_MEDIA_PROJECTION = 1;
+
         private SettingsActivity mActivity;
         private Button mStopStartButton;
         private Button mLoadLastButton;
+        private Button mCaptureScreenButton;
+
+        // Temp stuff
+        private int mScreenDensity;
+        private MediaProjectionManager mMediaProjectionManager;
+        private MediaProjection mMediaProjection;
+        private SurfaceView mSurfaceView;
+        private Surface mSurface;
+        private VirtualDisplay mVirtualDisplay;
+        private boolean mIsProjecting;
+
+        private int mResultCode;
+        private Intent mResultData;
 
         private BroadcastReceiver mServiceAliveReceiver;
 
@@ -90,30 +120,54 @@ public class SettingsActivity extends Activity {
 
             mStopStartButton = (Button) rootView.findViewById(R.id.settings_stop_button);
             mLoadLastButton = (Button) rootView.findViewById(R.id.settings_load_last_button);
+            mCaptureScreenButton = (Button) rootView.findViewById(R.id.settings_capture_screen_button);
+            mSurfaceView = (SurfaceView) rootView.findViewById(R.id.settings_screen_capture_surface);
+            mSurface = mSurfaceView.getHolder().getSurface();
 
-            mStopStartButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent serviceIntent = new Intent(mActivity, OverlayControlService.class);
+            mStopStartButton.setOnClickListener(v -> {
+                Intent serviceIntent = new Intent(mActivity, OverlayControlService.class);
 
-                    if (mIsServiceAlive) {
-                        mActivity.stopService(serviceIntent);
-                    } else {
-                        mActivity.startService(serviceIntent);
-                    }
-                }
-            });
-
-            mLoadLastButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent serviceIntent = new Intent(mActivity, OverlayControlService.class);
-                    serviceIntent.putExtra(OverlayControlService.EXTRA_LOAD_LAST, true);
+                if (mIsServiceAlive) {
+                    mActivity.stopService(serviceIntent);
+                } else {
                     mActivity.startService(serviceIntent);
                 }
             });
 
+            mLoadLastButton.setOnClickListener(v -> {
+                Intent serviceIntent = new Intent(mActivity, OverlayControlService.class);
+                serviceIntent.putExtra(OverlayControlService.EXTRA_LOAD_LAST, true);
+                mActivity.startService(serviceIntent);
+            });
+
+            mCaptureScreenButton.setOnClickListener(v -> {
+                if (mIsProjecting) {
+                    stopScreenCapture();
+                } else {
+                    startScreenCapture();
+                }
+            });
+
+            initScreenCaptureConfig();
+
             return rootView;
+        }
+
+        @Override
+        public void onActivityResult(int requestCode, int resultCode, Intent data) {
+            super.onActivityResult(requestCode, resultCode, data);
+
+            if (requestCode == REQUEST_MEDIA_PROJECTION) {
+                if (resultCode == Activity.RESULT_OK) {
+                    if (getActivity() != null) {
+                        mResultCode = resultCode;
+                        mResultData = data;
+                        startScreenCapture();
+                    }
+                } else {
+                    Toast.makeText(getActivity(), "Unable to start screen capture", Toast.LENGTH_LONG).show();
+                }
+            }
         }
 
         @Override
@@ -133,6 +187,51 @@ public class SettingsActivity extends Activity {
 
         public void setStopStartButton(boolean isStarted) {
             mStopStartButton.setText(getString(isStarted ? R.string.settings_turn_off : R.string.settings_turn_on));
+        }
+
+        private void initScreenCaptureConfig() {
+            DisplayMetrics metrics = new DisplayMetrics();
+            mActivity.getWindowManager().getDefaultDisplay().getMetrics(metrics);
+            mScreenDensity = metrics.densityDpi;
+            mMediaProjectionManager = (MediaProjectionManager)
+                    mActivity.getSystemService(Context.MEDIA_PROJECTION_SERVICE);
+        }
+
+        private void initVirtualDisplay() {
+            if (mMediaProjection != null) {
+                mVirtualDisplay = mMediaProjection.createVirtualDisplay("ScreenCap",
+                        mSurfaceView.getWidth(), mSurfaceView.getHeight(), mScreenDensity,
+                        DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+                        mSurface, null, null);
+                mCaptureScreenButton.setText("Stop Capturing Screen");
+                mIsProjecting = true;
+            }
+        }
+
+        private void initMediaProjection() {
+            mMediaProjection = mMediaProjectionManager.getMediaProjection(mResultCode, mResultData);
+        }
+
+        private void startScreenCapture() {
+            if (mSurface == null || mActivity == null) return;
+
+            if (mMediaProjection != null) {
+                initVirtualDisplay();
+            } else if (mResultCode != 0 && mResultData != null) {
+                initMediaProjection();
+                initVirtualDisplay();
+            } else {
+                mActivity.startActivityForResult(mMediaProjectionManager.createScreenCaptureIntent(),
+                        REQUEST_MEDIA_PROJECTION);
+            }
+        }
+
+        private void stopScreenCapture() {
+            if (mVirtualDisplay == null) return;
+            mVirtualDisplay.release();
+            mVirtualDisplay = null;
+            mCaptureScreenButton.setText("Capture Screen");
+            mIsProjecting = false;
         }
     }
 

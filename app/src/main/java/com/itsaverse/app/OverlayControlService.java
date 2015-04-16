@@ -22,6 +22,7 @@ import android.os.Looper;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
 import android.view.animation.AnimationUtils;
@@ -169,6 +170,8 @@ public class OverlayControlService extends Service {
                 }
             };
             mScreenshotObserver.startWatching();
+
+            //displayLoadingIndicator();
 
             mIsInitialized = true;
             Log.e(TAG, "RUNNING OVERLAY CONTROL SERVICE");
