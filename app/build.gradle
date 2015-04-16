@@ -17,6 +17,8 @@ repositories {
 }
 
 dependencies {
+    compile "com.android.support:support-v4:22.0.0"
+    compile "com.android.support:support-v13:21.0.2"
     compile 'tess-two:tess-two:0.0.1-SNAPSHOT@aar'
     compile 'org.apache.commons:commons-io:+'
     compile 'com.squareup.retrofit:retrofit:+'

@@ -1,6 +1,4 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    tools:context="com.itsaverse.app.SettingsActivity.SettingsFragment"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -59,7 +57,7 @@
     <SurfaceView
         android:id="@+id/settings_screen_capture_surface"
         android:layout_width="match_parent"
-        android:layout_height="400dp"
+        android:layout_height="200dp"
         android:layout_below="@id/settings_capture_screen_button"
         android:layout_centerHorizontal="true"/>
 

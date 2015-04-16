@@ -1,7 +1,6 @@
 package com.itsaverse.app;
 
 import android.app.Activity;
-import android.app.Fragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -11,7 +10,10 @@ import android.hardware.display.VirtualDisplay;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -23,7 +25,7 @@ import android.view.Window;
 import android.widget.Button;
 import android.widget.Toast;
 
-public class SettingsActivity extends Activity {
+public class SettingsActivity extends FragmentActivity {
 
     private SettingsFragment mSettingsFragment;
 
@@ -33,24 +35,16 @@ public class SettingsActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
 
-        mSettingsFragment = new SettingsFragment(this);
+        mSettingsFragment = new SettingsFragment();
 
         if (savedInstanceState == null) {
-            getFragmentManager().beginTransaction()
-                    .add(R.id.container, mSettingsFragment)
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.container, mSettingsFragment)
                     .commit();
-        };
+        }
 
         Intent serviceIntent = new Intent(this, OverlayControlService.class);
         startService(serviceIntent);
-    }
-
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (mSettingsFragment != null && mSettingsFragment.isResumed() && mSettingsFragment.isVisible()) {
-            mSettingsFragment.onActivityResult(requestCode, resultCode, data);
-        }
     }
 
     @Override
@@ -75,6 +69,8 @@ public class SettingsActivity extends Activity {
 
     public static class SettingsFragment extends Fragment {
 
+        private static final String STATE_RESULT_CODE = "result_code";
+        private static final String STATE_RESULT_DATA = "result_data";
         private static final int REQUEST_MEDIA_PROJECTION = 1;
 
         private SettingsActivity mActivity;
@@ -98,9 +94,7 @@ public class SettingsActivity extends Activity {
 
         private boolean mIsServiceAlive;
 
-        public SettingsFragment(SettingsActivity activity) {
-            mActivity = activity;
-
+        public SettingsFragment() {
             mServiceAliveReceiver = new BroadcastReceiver() {
                 @Override
                 public void onReceive(Context context, Intent intent) {
@@ -113,15 +107,26 @@ public class SettingsActivity extends Activity {
         }
 
         @Override
+        public void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            if (savedInstanceState != null) {
+                mResultCode = savedInstanceState.getInt(STATE_RESULT_CODE);
+                mResultData = savedInstanceState.getParcelable(STATE_RESULT_DATA);
+            }
+        }
+
+        @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
                 Bundle savedInstanceState) {
+            return inflater.inflate(R.layout.fragment_settings, container, false);
+        }
 
-            View rootView = inflater.inflate(R.layout.fragment_settings, container, false);
-
-            mStopStartButton = (Button) rootView.findViewById(R.id.settings_stop_button);
-            mLoadLastButton = (Button) rootView.findViewById(R.id.settings_load_last_button);
-            mCaptureScreenButton = (Button) rootView.findViewById(R.id.settings_capture_screen_button);
-            mSurfaceView = (SurfaceView) rootView.findViewById(R.id.settings_screen_capture_surface);
+        @Override
+        public void onViewCreated(View view, Bundle savedInstanceState) {
+            mStopStartButton = (Button) view.findViewById(R.id.settings_stop_button);
+            mLoadLastButton = (Button) view.findViewById(R.id.settings_load_last_button);
+            mCaptureScreenButton = (Button) view.findViewById(R.id.settings_capture_screen_button);
+            mSurfaceView = (SurfaceView) view.findViewById(R.id.settings_screen_capture_surface);
             mSurface = mSurfaceView.getHolder().getSurface();
 
             mStopStartButton.setOnClickListener(v -> {
@@ -147,10 +152,22 @@ public class SettingsActivity extends Activity {
                     startScreenCapture();
                 }
             });
+        }
 
+        @Override
+        public void onActivityCreated(Bundle savedInstanceState) {
+            super.onActivityCreated(savedInstanceState);
+            mActivity = (SettingsActivity) getActivity();
             initScreenCaptureConfig();
+        }
 
-            return rootView;
+        @Override
+        public void onSaveInstanceState(Bundle outState) {
+            super.onSaveInstanceState(outState);
+            if (mResultData != null) {
+                outState.putInt(STATE_RESULT_CODE, mResultCode);
+                outState.putParcelable(STATE_RESULT_DATA, mResultData);
+            }
         }
 
         @Override
@@ -162,7 +179,8 @@ public class SettingsActivity extends Activity {
                     if (getActivity() != null) {
                         mResultCode = resultCode;
                         mResultData = data;
-                        startScreenCapture();
+                        initMediaProjection();
+                        initVirtualDisplay();
                     }
                 } else {
                     Toast.makeText(getActivity(), "Unable to start screen capture", Toast.LENGTH_LONG).show();
@@ -183,6 +201,13 @@ public class SettingsActivity extends Activity {
         public void onPause() {
             super.onPause();
             mActivity.unregisterReceiver(mServiceAliveReceiver);
+            stopScreenCapture();
+        }
+
+        @Override
+        public void onDestroy() {
+            super.onDestroy();
+            tearDownMediaProjection();
         }
 
         public void setStopStartButton(boolean isStarted) {
@@ -199,10 +224,31 @@ public class SettingsActivity extends Activity {
 
         private void initVirtualDisplay() {
             if (mMediaProjection != null) {
+                Log.i("STUFF", "Setting up a VirtualDisplay: " +
+                        mSurfaceView.getWidth() + "x" + mSurfaceView.getHeight() +
+                        " (" + mScreenDensity + ") Surface: " + (mSurface == null ? "null" : "not null"));
                 mVirtualDisplay = mMediaProjection.createVirtualDisplay("ScreenCap",
                         mSurfaceView.getWidth(), mSurfaceView.getHeight(), mScreenDensity,
                         DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-                        mSurface, null, null);
+                        mSurface, new VirtualDisplay.Callback() {
+                            @Override
+                            public void onPaused() {
+                                super.onPaused();
+                                Log.d("SURFACE", "Paused");
+                            }
+
+                            @Override
+                            public void onResumed() {
+                                super.onResumed();
+                                Log.d("SURFACE", "Resumed");
+                            }
+
+                            @Override
+                            public void onStopped() {
+                                super.onStopped();
+                                Log.d("SURFACE", "Stopped");
+                            }
+                        }, null);
                 mCaptureScreenButton.setText("Stop Capturing Screen");
                 mIsProjecting = true;
             }
@@ -221,17 +267,26 @@ public class SettingsActivity extends Activity {
                 initMediaProjection();
                 initVirtualDisplay();
             } else {
-                mActivity.startActivityForResult(mMediaProjectionManager.createScreenCaptureIntent(),
+                startActivityForResult(mMediaProjectionManager.createScreenCaptureIntent(),
                         REQUEST_MEDIA_PROJECTION);
             }
         }
 
         private void stopScreenCapture() {
             if (mVirtualDisplay == null) return;
+
             mVirtualDisplay.release();
             mVirtualDisplay = null;
+
             mCaptureScreenButton.setText("Capture Screen");
             mIsProjecting = false;
+        }
+
+        private void tearDownMediaProjection() {
+            if (mMediaProjection != null) {
+                mMediaProjection.stop();
+                mMediaProjection = null;
+            }
         }
     }
 
